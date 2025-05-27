@@ -3,13 +3,9 @@ Copyright: (c) 2025 Marco Minutoli
 SPDX-License-Identifier: BSD-3-Clause
 Maintainer: Marco Minutoli <mminutoli@gmail.com>
 
-Chart Generator for the BTZS system
+Chart Generator for the BTZS system.
 -}
 
-module BtzsCharts
-    ( projectName
-    ) where
+module BtzsCharts (module BTZS) where
 
-
-projectName :: String
-projectName = "btzs-charts"
+import BtzsCharts.Types as BTZS
