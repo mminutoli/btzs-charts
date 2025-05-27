@@ -27,8 +27,9 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update && sudo apt-get install -y libblas-dev liblapack-dev libgsl-dev
+
     - name: Install Dependencies
-      if: runner.os == 'Darwin'
+      if: runner.os == 'macOS'
       run: |
         sudo brew update && sudo brew install openblas lapack gsl
 
@@ -82,6 +83,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/main'
+
+    - name: Install Dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update && sudo apt-get install -y libblas-dev liblapack-dev libgsl-dev
 
     - uses: haskell-actions/setup@v2
       name: Setup Haskell Stack
