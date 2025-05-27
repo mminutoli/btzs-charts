@@ -1,7 +1,4 @@
 module Main (main) where
 
-import BtzsCharts (projectName)
-
-
 main :: IO ()
-main = putStrLn ("Tests for " ++ projectName)
+main = putStrLn ("Tests not Yet Implemented")
