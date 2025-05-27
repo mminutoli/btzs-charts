@@ -31,7 +31,7 @@ jobs:
     - name: Install Dependencies
       if: runner.os == 'macOS'
       run: |
-        sudo brew update && sudo brew install openblas lapack gsl
+        brew update && brew install openblas lapack gsl
 
     - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
