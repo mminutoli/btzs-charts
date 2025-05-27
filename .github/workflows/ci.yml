@@ -15,13 +15,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os: [ubuntu-latest, macOS-latest]
         cabal: ["3.10.3.0"]
         ghc:
           - "9.8.4"
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update && sudo apt-get install -y libblas-dev liblapack-dev libgsl-dev
+    - name: Install Dependencies
+      if: runner.os == 'Darwin'
+      run: |
+        sudo brew update && sudo brew install openblas lapack gsl
 
     - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
