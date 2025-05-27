@@ -30,7 +30,7 @@ data StepTablet =
   StepTablet
   {
     -- | Step Tablet Name
-    name :: T.Text,
+    steptabletName :: T.Text,
     -- | Densities as read by the densitometers.
     densities :: DensityReadings
   }
