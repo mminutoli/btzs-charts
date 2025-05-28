@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveGeneric #-}
 -- |
 -- Copyright: (c) 2025 Marco Minutoli
@@ -34,7 +35,7 @@ data StepTablet =
     -- | Densities as read by the densitometers.
     densities :: !DensityReadings
   }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
 
 instance ToJSON StepTablet
 instance FromJSON StepTablet
@@ -52,7 +53,7 @@ data MaterialTest =
     -- | A map storing the results from testing.
     results :: !(M.Map Float DensityReadings)
   }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
 
 instance FromJSON MaterialTest
 instance ToJSON MaterialTest
