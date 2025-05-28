@@ -1,19 +1,19 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Copyright: (c) 2025 Marco Minutoli
 -- SPDX-License-Identifier: BSD-3-Clause
 -- Maintainer: Marco Minutoli <mminutoli@gmail.com>
 --
 -- Types capturing the information from the Paper and Film Testing procedures.
+
 module BtzsCharts.Types (
   Density,
   DensityReadings,
   MaterialTest(..)
   ) where
 
-import Data.Aeson
-import GHC.Generics
+import Data.Aeson ( FromJSON, ToJSON )
+import GHC.Generics ( Generic )
 
 import qualified Data.Text   as T
 import qualified Data.Map    as M
@@ -30,9 +30,9 @@ data StepTablet =
   StepTablet
   {
     -- | Step Tablet Name
-    steptabletName :: T.Text,
+    steptabletName :: !T.Text,
     -- | Densities as read by the densitometers.
-    densities :: DensityReadings
+    densities :: !DensityReadings
   }
   deriving (Generic, Show)
 
@@ -44,13 +44,13 @@ data MaterialTest =
   MaterialTest
   {
     -- | The name of the tested material.
-    name :: T.Text,
+    name :: !T.Text,
     -- | The paper developer used.
-    developer :: T.Text,
+    developer :: !T.Text,
     -- | the temperature of the development process.
-    temperature :: Float,
+    temperature :: !Float,
     -- | A map storing the results from testing.
-    results :: M.Map Float DensityReadings
+    results :: !(M.Map Float DensityReadings)
   }
   deriving (Generic, Show)
 
