@@ -73,7 +73,10 @@ test-suite btzs-charts-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  build-depends:       btzs-charts
+  build-depends:       btzs-charts,
+                       tasty,
+                       hedgehog,
+                       tasty-hedgehog
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N
