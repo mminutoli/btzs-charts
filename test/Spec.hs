@@ -14,7 +14,7 @@ module Main (main) where
 
 import Test.Tasty
 
-import BtzsCharts.TypesSpec(btzsChartsTypesTests)
+import BtzsChartsTests.TypesSpec(btzsChartsTypesTests)
 
 tests :: TestTree
 tests = testGroup "Tests" [btzsChartsTypesTests]

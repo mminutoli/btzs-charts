@@ -10,7 +10,8 @@
 module BtzsCharts.Types (
   Density,
   DensityReadings,
-  MaterialTest(..)
+  MaterialTest(..),
+  StepTablet(..)
   ) where
 
 import Data.Aeson ( FromJSON, ToJSON )
