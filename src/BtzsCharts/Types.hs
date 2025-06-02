@@ -1,11 +1,17 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveGeneric #-}
--- |
--- Copyright: (c) 2025 Marco Minutoli
--- SPDX-License-Identifier: BSD-3-Clause
--- Maintainer: Marco Minutoli <mminutoli@gmail.com>
---
--- Types capturing the information from the Paper and Film Testing procedures.
+{-|
+Module      : BtzsCharts.Types
+Description : Tests for the module BtzsCharts.Types.
+Copyright   : (c) Marco Minutoli, 2025
+
+License     : BSD-3
+Maintainer  : Marco Minutoli <mminutoli@gmail.com>
+Stability   : experimental
+Portability : POSIX
+
+Types capturing the information from the Paper and Film Testing procedures.
+-}
 
 module BtzsCharts.Types (
   Density,
@@ -47,7 +53,7 @@ data MaterialTest =
   {
     -- | The name of the tested material.
     name :: !T.Text,
-    -- | The paper developer used.
+    -- | The developer used.
     developer :: !T.Text,
     -- | the temperature of the development process.
     temperature :: !Float,
