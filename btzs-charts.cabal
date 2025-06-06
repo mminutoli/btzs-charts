@@ -28,7 +28,7 @@ common common-options
                        -- bytestring,
                        containers,
                        -- Chart,
-                       -- hmatrix-gsl,
+                       hmatrix-gsl,
                        vector,
                        text
 
@@ -58,6 +58,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     BtzsCharts
                        BtzsCharts.Types
+                       BtzsCharts.HDCurveFitting
 
 executable btzs-charts
   import:              common-options
