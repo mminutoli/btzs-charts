@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-|
 Module      : BtzsCharts.Types
-Description : Tests for the module BtzsCharts.Types.
+Description : Types capturing the sensitometric experiments on film.
 Copyright   : (c) Marco Minutoli, 2025
 
 License     : BSD-3
@@ -25,13 +25,13 @@ import GHC.Generics ( Generic )
 
 import qualified Data.Text   as T
 import qualified Data.Map    as M
-import qualified Data.Vector as VU
+import qualified Data.Vector.Storable as VS
 
 -- | A density as read by the densitometer.
-type Density = Float
+type Density = Double
 
 -- | A series of desities as read from the experiment.
-type DensityReadings = VU.Vector Density
+type DensityReadings = VS.Vector Density
 
 -- | Step Tablet
 data StepTablet =

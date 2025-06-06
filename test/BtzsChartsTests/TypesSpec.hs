@@ -23,7 +23,7 @@ import qualified Hedgehog.Range as Range
 import Test.Tasty ( TestTree, testGroup )
 import Test.Tasty.Hedgehog ( testProperty )
 
-import qualified Data.Vector as V
+import qualified Data.Vector.Storable as VS
 
 btzsChartsTypesTests :: TestTree
 btzsChartsTypesTests = testGroup "Tests for BtzsCharts.Types"
@@ -33,11 +33,11 @@ btzsChartsTypesTests = testGroup "Tests for BtzsCharts.Types"
 
 -- | Generate densities.
 genDensity :: Gen Density
-genDensity = Gen.float (Range.linearFrac 0.0 3.0)
+genDensity = Gen.double (Range.linearFrac 0.0 3.0)
 
 -- | Generate array of densities.
 genDensityReadings :: Gen DensityReadings
-genDensityReadings = V.fromList <$> Gen.list (Range.linear 1 31) genDensity
+genDensityReadings = VS.fromList <$> Gen.list (Range.linear 1 31) genDensity
 
 -- | Generate StepTablet objects.
 genStepTablet :: Gen StepTablet
