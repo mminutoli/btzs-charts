@@ -25,10 +25,13 @@ source-repository head
 common common-options
   build-depends:       base ^>= 4.19.1.0,
                        aeson,
-                       -- bytestring,
+                       bytestring,
                        containers,
-                       -- Chart,
+                       Chart,
+                       Chart-diagrams,
+                       data-default-class,
                        hmatrix-gsl,
+                       lens,
                        vector,
                        text
 
@@ -59,6 +62,7 @@ library
   exposed-modules:     BtzsCharts
                        BtzsCharts.Types
                        BtzsCharts.HDCurveFitting
+                       BtzsCharts.PlotCurves
 
 executable btzs-charts
   import:              common-options

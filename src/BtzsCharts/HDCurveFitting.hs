@@ -1,24 +1,24 @@
 {-# LANGUAGE DerivingStrategies #-}
--- |
--- Module      : BtzsCharts.HDCurveFitting
--- Description : Fit curves from the data collected in sensitometric experiments.
--- Copyright   : (c) Marco Minutoli, 2025
---
--- License     : BSD-3
--- Maintainer  : Marco Minutoli <mminutoli@gmail.com>
--- Stability   : experimental
--- Portability : POSIX
+{-|
+Module      : BtzsCharts.HDCurveFitting
+Description : Fit curves from the data collected in sensitometric experiments.
+Copyright   : (c) Marco Minutoli, 2025
+
+License     : BSD-3
+Maintainer  : Marco Minutoli <mminutoli@gmail.com>
+Stability   : experimental
+Portability : POSIX
+-}
 
 module BtzsCharts.HDCurveFitting (
-  HDCurve,
-  fitHDCurve
+  HDCurve(..),
+  fitHDCurve,
+  fitCurves
   ) where
 
 import BtzsCharts.Types (DensityReadings)
 import Data.Vector.Storable as VS
 import Numeric.GSL.Interpolation (evaluateV, InterpolationMethod(CSpline))
-import qualified Control.Category as Curves
-import qualified Control.Category as experiments
 
 -- | Hurter-Driffield Curves.
 --
@@ -65,4 +65,4 @@ fitHDCurve stepWedgeDensities materialDensities = HDCurve xs ys
 --     experiment.
 -- * a list of DensityReadings collected through a series of experiments.
 fitCurves :: DensityReadings -> [DensityReadings] -> [HDCurve]
-fitCurves stepWedgeDensities = map (fitHDCurve stepWedgeDensities)
+fitCurves stepWedgeDensities = Prelude.map (fitHDCurve stepWedgeDensities)
