@@ -56,11 +56,13 @@ data HDCurve =
 --     densities read by the reflection or transmission densitometer on
 --     the tested material.
 fitHDCurve :: DensityReadings -> (Float, DensityReadings) -> HDCurve
-fitHDCurve stepWedgeDensities (label, materialDensities) = HDCurve (show label) (VS.fromList xs) ys
+fitHDCurve stepWedgeDensities (label, materialDensities) =
+  HDCurve (show label) (VS.fromList xs) ys
   where
     x0 = VS.minimum stepWedgeDensities
     xs = [x0, x0 + 0.01 .. (VS.maximum stepWedgeDensities)]
-    ys = VS.fromList [evaluateV Linear stepWedgeDensities materialDensities x | x <- xs, x < VS.maximum stepWedgeDensities]
+    ys = VS.fromList [evaluateV Linear stepWedgeDensities materialDensities x
+                     | x <- xs, x < VS.maximum stepWedgeDensities]
 
 -- | Build HDCurve for a series of material experiments.
 --
@@ -68,7 +70,8 @@ fitHDCurve stepWedgeDensities (label, materialDensities) = HDCurve (show label) 
 -- * @stepWedge@: The step-wedge used for our material test.
 -- * @materialTest@: The results of the material test.
 fitCurves :: StepTablet -> MaterialTest -> [HDCurve]
-fitCurves stepWedge materialTest = Prelude.map (fitHDCurve stepWedgeDensities) experiments
+fitCurves stepWedge materialTest =
+  Prelude.map (fitHDCurve stepWedgeDensities) experiments
   where
     experiments = (M.toList . results) materialTest
     stepWedgeDensities = densities stepWedge
