@@ -1,6 +1,8 @@
 module Main (main) where
 
 import BtzsCharts.Types
+import BtzsCharts.HDCurveFitting
+import BtzsCharts.PlotCurves
 import Data.ByteString.Lazy as BL
 import Data.Aeson
 import System.Exit (exitFailure)
@@ -23,3 +25,9 @@ main = do
 
   print stepTablet
   print material
+
+  let hdCurves = fitCurves stepTablet material
+  let plot = plotHDCurves hdCurves
+
+  saveToFile plot "plot.svg"
+

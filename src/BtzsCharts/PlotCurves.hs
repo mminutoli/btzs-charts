@@ -17,7 +17,7 @@ module BtzsCharts.PlotCurves(
 import Control.Lens
 import Data.Default.Class
 import BtzsCharts.HDCurveFitting (HDCurve(..))
-import Graphics.Rendering.Chart (toPlot, layout_plots, layout_title, plot_lines_values, Layout, ToRenderable (toRenderable))
+import Graphics.Rendering.Chart
 import Graphics.Rendering.Chart.Backend.Diagrams (renderableToFile)
 import Data.Vector.Storable(toList)
 import BtzsCharts.Types (Density)
@@ -25,7 +25,9 @@ import BtzsCharts.Types (Density)
 plotHDCurves :: [HDCurve] -> Layout Density Density
 plotHDCurves curves = layout
   where
-    hdLine c = plot_lines_values .~ [zip (toList $ relativeLogExposure c) (toList $ outputDensity c)]
+    hdLine c =
+      plot_lines_title .~ hdCurveLabel c
+      $ plot_lines_values .~ [zip (toList $ relativeLogExposure c) (toList $ outputDensity c)]
       $ def
     layout = layout_title .~ "HD-Curve"
       $ layout_plots .~ Prelude.map (toPlot . hdLine) curves

@@ -12,13 +12,14 @@ Portability : POSIX
 
 module BtzsCharts.HDCurveFitting (
   HDCurve(..),
-  fitHDCurve,
   fitCurves
   ) where
 
-import BtzsCharts.Types (DensityReadings)
+import BtzsCharts.Types
 import Data.Vector.Storable as VS
-import Numeric.GSL.Interpolation (evaluateV, InterpolationMethod(CSpline))
+import Numeric.GSL.Interpolation (evaluateV, InterpolationMethod(Linear))
+
+import qualified Data.Map as M
 
 -- | Hurter-Driffield Curves.
 --
@@ -32,6 +33,7 @@ import Numeric.GSL.Interpolation (evaluateV, InterpolationMethod(CSpline))
 data HDCurve =
   HDCurve
   {
+    hdCurveLabel :: !String,                  -- ^ Experiment Lable
     relativeLogExposure :: !DensityReadings,  -- ^ Relative Log Exposure
     outputDensity :: !DensityReadings         -- ^ Density registered on the material
   }
@@ -50,19 +52,23 @@ data HDCurve =
 --
 -- * @stepWedgeDensities@: The densities of the step-wedge used for the
 --     experiment.
--- * @materialDensities@: The densities read by the reflection or
---     transmission densitometer on the tested material.
-fitHDCurve :: DensityReadings -> DensityReadings -> HDCurve
-fitHDCurve stepWedgeDensities materialDensities = HDCurve xs ys
+-- * @(label, materialDensities)@: The control variable and the associated
+--     densities read by the reflection or transmission densitometer on
+--     the tested material.
+fitHDCurve :: DensityReadings -> (Float, DensityReadings) -> HDCurve
+fitHDCurve stepWedgeDensities (label, materialDensities) = HDCurve (show label) (VS.fromList xs) ys
   where
-    xs = VS.fromList [0.0, 0.01 .. (VS.maximum stepWedgeDensities)]
-    ys = VS.fromList [evaluateV CSpline stepWedgeDensities materialDensities x | x <- VS.toList xs]
+    x0 = VS.minimum stepWedgeDensities
+    xs = [x0, x0 + 0.01 .. (VS.maximum stepWedgeDensities)]
+    ys = VS.fromList [evaluateV Linear stepWedgeDensities materialDensities x | x <- xs, x < VS.maximum stepWedgeDensities]
 
 -- | Build HDCurve for a series of material experiments.
 --
 -- Arguments:
--- * @stepWedgeDensities@: The densities of the step-wedge used for the
---     experiment.
--- * a list of DensityReadings collected through a series of experiments.
-fitCurves :: DensityReadings -> [DensityReadings] -> [HDCurve]
-fitCurves stepWedgeDensities = Prelude.map (fitHDCurve stepWedgeDensities)
+-- * @stepWedge@: The step-wedge used for our material test.
+-- * @materialTest@: The results of the material test.
+fitCurves :: StepTablet -> MaterialTest -> [HDCurve]
+fitCurves stepWedge materialTest = Prelude.map (fitHDCurve stepWedgeDensities) experiments
+  where
+    experiments = (M.toList . results) materialTest
+    stepWedgeDensities = densities stepWedge
