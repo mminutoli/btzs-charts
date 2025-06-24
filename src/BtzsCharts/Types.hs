@@ -17,11 +17,14 @@ module BtzsCharts.Types (
   Density,
   DensityReadings,
   MaterialTest(..),
-  StepTablet(..)
+  StepTablet(..),
+  ProcessConfiguration(..),
+  ProcessConfM
   ) where
 
 import Data.Aeson ( FromJSON, ToJSON )
 import GHC.Generics ( Generic )
+import Control.Monad.Reader
 
 import qualified Data.Text   as T
 import qualified Data.Map    as M
@@ -64,3 +67,22 @@ data MaterialTest =
 
 instance FromJSON MaterialTest
 instance ToJSON MaterialTest
+
+data ProcessConfiguration =
+  ProcessConfiguration
+  {
+    -- | The value to use as standard average gradient.
+    standardAvgGradient :: !Double,
+    -- | Factor used to compute the value of IDmin from the standard average gradient.
+    speedPointFactor :: !Double,
+    -- | Factor used to compensate for flare effects.
+    flareCompensationFactor :: !Double,
+    -- | Scale Index is a personalized value for the print exposure scale.
+    scaleIndex :: !Double
+  }
+  deriving stock (Generic, Show)
+
+instance FromJSON ProcessConfiguration
+instance ToJSON ProcessConfiguration
+
+type ProcessConfM = Reader ProcessConfiguration

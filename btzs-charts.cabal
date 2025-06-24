@@ -32,6 +32,7 @@ common common-options
                        data-default-class,
                        hmatrix-gsl,
                        lens,
+                       mtl,
                        vector,
                        text
 
