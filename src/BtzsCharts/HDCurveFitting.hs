@@ -12,7 +12,7 @@ Portability : POSIX
 
 module BtzsCharts.HDCurveFitting (
   HDCurve(..),
-  fitCurves,
+  fitHDCurves,
   basePlusFog,
   findPoint,
   avgGradient,
@@ -41,7 +41,7 @@ import qualified Data.Map as M
 data HDCurve =
   HDCurve
   {
-    hdCurveLabel :: !String,                  -- ^ Experiment Lable
+    developmentTime:: !Float,                 -- ^ Development Time used.
     relativeLogExposure :: !DensityReadings,  -- ^ Relative Log Exposure
     outputDensity :: !DensityReadings         -- ^ Density registered on the material
   }
@@ -60,12 +60,12 @@ data HDCurve =
 --
 -- * @stepWedgeDensities@: The densities of the step-wedge used for the
 --     experiment.
--- * @(label, materialDensities)@: The control variable and the associated
+-- * @(devtime, materialDensities)@: The control variable and the associated
 --     densities read by the reflection or transmission densitometer on
 --     the tested material.
 fitHDCurve :: DensityReadings -> (Float, DensityReadings) -> HDCurve
-fitHDCurve stepWedgeDensities (label, materialDensities) =
-  HDCurve (show label) (VS.fromList xs) ys
+fitHDCurve stepWedgeDensities (devtime, materialDensities) =
+  HDCurve devtime (VS.fromList xs) ys
   where
     x0 = VS.minimum stepWedgeDensities
     xs = [x0, x0 + 0.01 .. (VS.maximum stepWedgeDensities)]
@@ -77,8 +77,8 @@ fitHDCurve stepWedgeDensities (label, materialDensities) =
 -- Arguments:
 -- * @stepWedge@: The step-wedge used for our material test.
 -- * @materialTest@: The results of the material test.
-fitCurves :: StepTablet -> MaterialTest -> [HDCurve]
-fitCurves stepWedge materialTest =
+fitHDCurves :: StepTablet -> MaterialTest -> [HDCurve]
+fitHDCurves stepWedge materialTest =
   Prelude.map (fitHDCurve stepWedgeDensities) experiments
   where
     experiments = (M.toList . results) materialTest

@@ -23,11 +23,7 @@ main = do
   stepTablet <- load "./data/Stauffer-21steps.json" "Failed to load StepTablet." :: IO StepTablet
   material <- load "./data/AristaUltraEdu100.json" "Failed to load Material" :: IO MaterialTest
 
-  print stepTablet
-  print material
-
-  let hdCurves = fitCurves stepTablet material
+  let hdCurves = fitHDCurves stepTablet material
   let plot = plotHDCurves hdCurves
 
   saveToFile plot "plot.svg"
-

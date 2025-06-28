@@ -28,12 +28,12 @@ plotHDCurves :: [HDCurve] -> Layout Density Density
 plotHDCurves curves = layout
   where
     hdLine i c =
-      plot_lines_title .~ hdCurveLabel c
+      plot_lines_title .~ show (developmentTime c)
       $ plot_lines_style . line_color .~ color i
       $ plot_lines_values .~ [zip (toList $ relativeLogExposure c) (toList $ outputDensity c)]
       $ def
     layout = layout_title .~ "HD-Curve"
-      $ layout_plots .~ (Prelude.map toPlot $ Prelude.zipWith hdLine [0..] curves)
+      $ layout_plots .~ Prelude.map toPlot (Prelude.zipWith hdLine [0..] curves)
       $ def
     color i = opaque $ brewerSet Set1 (length curves) !! i
 
