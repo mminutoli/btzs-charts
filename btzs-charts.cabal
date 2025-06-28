@@ -26,6 +26,7 @@ common common-options
   build-depends:       base ^>= 4.19.1.0,
                        aeson,
                        bytestring,
+                       colour,
                        containers,
                        Chart,
                        Chart-diagrams,
@@ -33,6 +34,7 @@ common common-options
                        hmatrix-gsl,
                        lens,
                        mtl,
+                       palette,
                        vector,
                        text
 
