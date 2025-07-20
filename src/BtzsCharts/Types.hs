@@ -78,7 +78,9 @@ data ProcessConfiguration =
     -- | Factor used to compensate for flare effects.
     flareCompensationFactor :: !Double,
     -- | Scale Index is a personalized value for the print exposure scale.
-    scaleIndex :: !Double
+    scaleIndex :: !Double,
+    -- | Number of zones to use to determine the N values
+    zoneRange :: !Double
   }
   deriving stock (Generic, Show)
 

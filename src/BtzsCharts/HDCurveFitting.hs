@@ -18,7 +18,8 @@ module BtzsCharts.HDCurveFitting (
   avgGradient,
   idMinTarget,
   findIDmin,
-  findIDmax
+  findIDmax,
+  computeNvalues
   ) where
 
 import Control.Monad.Reader
@@ -166,3 +167,25 @@ findIDmax curve = do
     else do
       gradient <- avgGradient curve
       return (-1, x/gradient, target)
+
+-- | Compute the N-value of a HD-curve according to our process.
+--
+-- Arguments:
+-- * @curve@: The HD-Curve data fit from the sensitometric measurements.
+computeNvalue :: HDCurve -> ProcessConfM Double
+computeNvalue curve = do
+  (_, _, y_min) <- findIDmin curve
+  (_, _, y_max) <- findIDmax curve
+  range <- asks zoneRange
+  let density_range = y_min - y_max
+      n = (density_range/7 * range) - range
+
+  return n
+
+-- | Compute the N-values according to our process and the
+--   results of our material test.
+--
+-- Arguments:
+-- * a list of hdCurves.
+computeNvalues :: [HDCurve] -> ProcessConfM [Double]
+computeNvalues = Prelude.mapM computeNvalue
