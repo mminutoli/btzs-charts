@@ -31,6 +31,7 @@ plotHDCurves curves = layout
     hdLine i c =
       plot_lines_title .~ printf "%.1f min" (developmentTime c)
       $ plot_lines_style . line_color .~ color i
+      $ plot_lines_style . line_width .~ 2.5
       $ plot_lines_values .~ [zip (toList $ relativeLogExposure c) (toList $ outputDensity c)]
       $ def
     layout = layout_title .~ "HD-Curve"
