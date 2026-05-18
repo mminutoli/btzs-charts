@@ -1,1 +1,4 @@
-resolver: lts-23.24
+resolver: lts-24.40
+nix:
+  enable: true
+  packages: [gsl, blas, lapack, pkg-config, zlib]
