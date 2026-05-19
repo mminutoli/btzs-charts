@@ -19,14 +19,15 @@ module BtzsCharts.HDCurveFitting (
   idMinTarget,
   findIDmin,
   findIDmax,
-  computeNvalues
+  computeNvalues,
+  logisticModel,
+  exposureForDensity
   ) where
 
 import Control.Monad.Reader
 import BtzsCharts.Types
 import Data.Vector.Storable as VS
-import Data.Maybe
-import Numeric.GSL.Interpolation (evaluateV, InterpolationMethod(Linear))
+import Numeric.GSL.Fitting (fitModel)
 
 import qualified Data.Map as M
 
@@ -44,14 +45,35 @@ data HDCurve =
   {
     developmentTime:: !Float,                 -- ^ Development Time used.
     relativeLogExposure :: !DensityReadings,  -- ^ Relative Log Exposure
-    outputDensity :: !DensityReadings         -- ^ Density registered on the material
+    outputDensity :: !DensityReadings,        -- ^ Density registered on the material
+    modelParameters :: ![Double]              -- ^ Parameters of the fitted logistic model
   }
   deriving stock (Show)
 
+-- | The 4-parameter logistic model used for fitting.
+-- f(x) = dMin + (dMax - dMin) / (1 + exp(-slope * (x - infl)))
+-- fitModel expects: [Double] -> x -> [Double]
+logisticModel :: [Double] -> Double -> [Double]
+logisticModel [dMin, dMax, slope, infl] x =
+  [ dMin + (dMax - dMin) / (1 + exp (-slope * (x - infl))) ]
+logisticModel _ _ = error "logisticModel: expected 4 parameters"
+
+-- | The Jacobian of the 4-parameter logistic model.
+-- fitModel expects: [Double] -> x -> [[Double]]
+logisticDeriv :: [Double] -> Double -> [[Double]]
+logisticDeriv [dMin, dMax, slope, infl] x =
+  let e = exp (-slope * (x - infl))
+      denom = 1 + e
+      f_max = 1 / denom
+      f_min = 1 - f_max
+      df_ds = (dMax - dMin) * e * (x - infl) / (denom * denom)
+      df_di = (dMax - dMin) * (-slope) * e / (denom * denom)
+  in [[f_min, f_max, df_ds, df_di]]
+logisticDeriv _ _ = error "logisticDeriv: expected 4 parameters"
+
 -- | Fit a HDCurve on the points read from the development experiments.
 --
--- This function fit a curve using a cubic spline on the points obtained through
--- the development tests.
+-- This function fits a 4-parameter logistic model using non-linear least squares.
 --
 -- The function expects that the relative order of the DensityReadings is
 -- consistent between the two arguments and that the two vectors are of the same
@@ -66,12 +88,28 @@ data HDCurve =
 --     the tested material.
 fitHDCurve :: DensityReadings -> (Float, DensityReadings) -> HDCurve
 fitHDCurve stepWedgeDensities (devtime, materialDensities) =
-  HDCurve devtime (VS.fromList xs) ys
+  HDCurve devtime (VS.fromList xs) (VS.fromList ys) bestParams
   where
-    x0 = VS.minimum stepWedgeDensities
-    xs = [x0, x0 + 0.01 .. (VS.maximum stepWedgeDensities)]
-    ys = VS.fromList [evaluateV Linear stepWedgeDensities materialDensities x
-                     | x <- xs, x < VS.maximum stepWedgeDensities]
+    xs_raw = VS.toList stepWedgeDensities
+    ys_raw = VS.toList materialDensities
+    dat = zip xs_raw (Prelude.map (:[]) ys_raw)
+
+    -- Initial guesses for the 4PL model
+    dMin_guess = Prelude.minimum ys_raw
+    dMax_guess = Prelude.maximum ys_raw + 0.5
+    slope_guess = 2.0
+    infl_guess = (Prelude.maximum xs_raw + Prelude.minimum xs_raw) / 2.0
+    initialGuess = [dMin_guess, dMax_guess, slope_guess, infl_guess]
+
+    -- Perform the non-linear least squares fit
+    -- fitModel epsAbs epsRel maxIter (model, deriv) data initialGuess
+    (bestParams, _) = fitModel 1e-8 1e-8 1000 (logisticModel, logisticDeriv) dat initialGuess
+
+    -- Generate a smooth curve, potentially extrapolating slightly
+    x0 = Prelude.minimum xs_raw
+    x1 = max 3.0 (Prelude.maximum xs_raw)
+    xs = [x0, x0 + 0.01 .. x1]
+    ys = Prelude.concatMap (logisticModel bestParams) xs
 
 -- | Build HDCurve for a series of material experiments.
 --
@@ -90,27 +128,32 @@ fitHDCurves stepWedge materialTest =
 -- Arguments:
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
 basePlusFog :: HDCurve -> Density
-basePlusFog = VS.last . outputDensity
+basePlusFog curve = Prelude.head (modelParameters curve)
+
+-- | Compute the Relative Log Exposure required to reach a specific density.
+-- This uses the inverse of the 4-parameter logistic model.
+exposureForDensity :: HDCurve -> Density -> Double
+exposureForDensity curve targetD =
+  let [dMin, dMax, slope, infl] = modelParameters curve
+      -- Clamp the density slightly to avoid log of zero/negative at asymptotes
+      d = max (dMin + 1e-6) (min (dMax - 1e-6) targetD)
+      ratio = (dMax - dMin) / (d - dMin)
+  in if ratio <= 1.0 
+     then infl -- Should not happen if d < dMax
+     else infl - (1 / slope) * log (ratio - 1)
 
 -- | Find the first point on the HD-Curve having at least the target density.
 --
--- The function returns the first point on the HD-Curve with at least target
--- density above `basePlusFog` or the highest recorded density otherwise.
--- While not perfect, this solution avoids dealing with Maybe everywhere and
--- fits well the analysis that we need to perform on the curves. Nevertheless
--- if anyone has better ideas, I am open to suggestions.
+-- This function now uses the fitted mathematical model for higher precision.
 --
 -- Arguments:
 -- * @target@: The target above base+fog to determine the speed point.
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
 findPoint :: Density -> HDCurve -> (Int, Density, Density)
-findPoint target curve = (pos, e, d)
+findPoint target curve = (-1, e, targetDensity)
   where
     targetDensity = basePlusFog curve + target
-    idx = VS.findIndexR (>= targetDensity) (outputDensity curve)
-    pos = fromMaybe 0 idx
-    e = relativeLogExposure curve VS.! pos
-    d = outputDensity curve VS.! pos
+    e = exposureForDensity curve targetDensity
 
 -- | Compute the average gradient of a curve.
 --
