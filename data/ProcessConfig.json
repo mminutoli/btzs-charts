@@ -1,0 +1,10 @@
+{
+  "standardAvgGradient": 0.58,
+  "speedPointFactor": 1.0,
+  "flareCompensationFactor": 1.0,
+  "scaleIndex": 1.0,
+  "zoneRange": 7.0,
+  "filmSpeedPointDensity": 0.1,
+  "paperSpeedPointDensity": 0.04,
+  "paperIdMaxPercentage": 0.90
+}

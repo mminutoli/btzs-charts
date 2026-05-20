@@ -112,7 +112,13 @@ data ProcessConfiguration =
     -- | Scale Index is a personalized value for the print exposure scale.
     scaleIndex :: !Double,
     -- | Number of zones to use to determine the N values
-    zoneRange :: !Double
+    zoneRange :: !Double,
+    -- | Density above base+fog used to determine the film speed point (typically 0.1).
+    filmSpeedPointDensity :: !Double,
+    -- | Density above base+fog used to determine the paper speed point (typically 0.04).
+    paperSpeedPointDensity :: !Double,
+    -- | Percentage of Dmax used to determine IDmax for paper (typically 0.90 or 90%).
+    paperIdMaxPercentage :: !Double
   }
   deriving stock (Generic, Show)
 
