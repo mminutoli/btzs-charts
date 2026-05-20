@@ -19,10 +19,12 @@ module BtzsCharts.Types (
   MaterialTest(..),
   StepTablet(..),
   ProcessConfiguration(..),
+  validateMeasurements,
   ProcessConfM
   ) where
 
-import Data.Aeson ( FromJSON, ToJSON )
+import Data.Aeson
+import Data.Aeson.Types (SumEncoding(..))
 import GHC.Generics ( Generic )
 import Control.Monad.Reader
 
@@ -51,22 +53,52 @@ instance ToJSON StepTablet
 instance FromJSON StepTablet
 
 -- | Capture the settings and the results of testing materials.
-data MaterialTest =
-  MaterialTest
-  {
-    -- | The name of the tested material.
-    name :: !T.Text,
-    -- | The developer used.
-    developer :: !T.Text,
-    -- | the temperature of the development process.
-    temperature :: !Float,
-    -- | A map storing the results from testing.
-    results :: !(M.Map Float DensityReadings)
-  }
+data MaterialTest
+  = FilmTest
+    { -- | The name of the tested material.
+      name :: !T.Text
+    , -- | The developer used.
+      developer :: !T.Text
+    , -- | the temperature of the development process.
+      temperature :: !Float
+    , -- | A map storing the results from testing.
+      measurements :: !(M.Map Float DensityReadings)
+    }
+  | PaperTest
+    { -- | The name of the tested material.
+      name :: !T.Text
+    , -- | The developer used.
+      developer :: !T.Text
+    , -- | the temperature of the development process.
+      temperature :: !Float
+    , -- | A map storing the results from testing.
+      paperMeasurements :: !(M.Map T.Text DensityReadings)
+    }
   deriving stock (Generic, Show)
 
-instance FromJSON MaterialTest
-instance ToJSON MaterialTest
+aesonOptions :: Options
+aesonOptions = defaultOptions
+  { sumEncoding = defaultTaggedObject { tagFieldName = "type" }
+  , constructorTagModifier = \c -> if c == "FilmTest" then "Film" else "Paper"
+  , fieldLabelModifier = \f -> if f == "paperMeasurements" then "measurements" else f
+  }
+
+instance FromJSON MaterialTest where
+  parseJSON = genericParseJSON aesonOptions
+
+instance ToJSON MaterialTest where
+  toJSON = genericToJSON aesonOptions
+
+-- | Validate that the material test data exactly matches the length of the step tablet used.
+validateMeasurements :: StepTablet -> MaterialTest -> Either String ()
+validateMeasurements tablet test =
+  let expectedLen = VS.length (densities tablet)
+      rs = case test of
+             FilmTest _ _ _ meas -> M.elems meas
+             PaperTest _ _ _ meas -> M.elems meas
+  in if all (\r -> VS.length r == expectedLen) rs
+     then Right ()
+     else Left "Mismatch between StepTablet length and measurement lengths."
 
 data ProcessConfiguration =
   ProcessConfiguration

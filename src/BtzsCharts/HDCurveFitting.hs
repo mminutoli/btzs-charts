@@ -117,11 +117,13 @@ fitHDCurve stepWedgeDensities (devtime, materialDensities) =
 -- * @stepWedge@: The step-wedge used for our material test.
 -- * @materialTest@: The results of the material test.
 fitHDCurves :: StepTablet -> MaterialTest -> [HDCurve]
-fitHDCurves stepWedge materialTest =
-  Prelude.map (fitHDCurve stepWedgeDensities) experiments
+fitHDCurves stepWedge test@(FilmTest _ _ _ meas) =
+  case validateMeasurements stepWedge test of
+    Left err -> error $ "Validation failed: " Prelude.++ err
+    Right () -> Prelude.map (fitHDCurve stepWedgeDensities) (M.toList meas)
   where
-    experiments = (M.toList . results) materialTest
     stepWedgeDensities = densities stepWedge
+fitHDCurves _ (PaperTest{}) = error "Paper analysis not yet implemented"
 
 -- | The value of based plus fog as read from the sensitometer.
 --

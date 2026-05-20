@@ -62,7 +62,7 @@ prop_StepTablet_ToJSON_representation = property $ do
 
 -- | Generate MaterialTest.
 genMaterialTest :: Gen MaterialTest
-genMaterialTest = MaterialTest
+genMaterialTest = FilmTest
   <$> Gen.text (Range.constant 0 100) Gen.alphaNum
   <*> Gen.text (Range.constant 0 100) Gen.alphaNum
   <*> Gen.float (Range.linearFrac 0 30)
@@ -80,10 +80,19 @@ prop_MaterialTest_ToJSON_representation = property $ do
     jsonValue = toJSON aMaterialTest
 
     -- The expected representation of the MaterialTest
-    expectedValue = object [ "name" .= name aMaterialTest
-                           , "developer" .= developer aMaterialTest
-                           , "temperature" .= temperature aMaterialTest
-                           , "results" .= results aMaterialTest ]
+    expectedValue = case aMaterialTest of
+      FilmTest n d t m ->
+        object [ "type" .= ("Film" :: String)
+               , "name" .= n
+               , "developer" .= d
+               , "temperature" .= t
+               , "measurements" .= m ]
+      PaperTest n d t m ->
+        object [ "type" .= ("Paper" :: String)
+               , "name" .= n
+               , "developer" .= d
+               , "temperature" .= t
+               , "measurements" .= m ]
 
   -- The representation matches the expected one.
   jsonValue === expectedValue
