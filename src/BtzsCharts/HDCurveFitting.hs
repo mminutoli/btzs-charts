@@ -14,7 +14,8 @@ module BtzsCharts.HDCurveFitting (
   HDCurve(..),
   fitHDCurves,
   basePlusFog,
-  findPoint,
+  findPointAboveFog,
+  findPointAtDensity,
   logisticModel,
   exposureForDensity
   ) where
@@ -139,15 +140,20 @@ exposureForDensity curve targetD =
      then infl -- Should not happen if d < dMax
      else infl - (1 / slope) * log (ratio - 1)
 
--- | Find the first point on the HD-Curve having at least the target density.
+-- | Find the point on the HD-Curve corresponding to an absolute density.
+findPointAtDensity :: Density -> HDCurve -> (Double, Density)
+findPointAtDensity targetDensity curve = (e, targetDensity)
+  where
+    e = exposureForDensity curve targetDensity
+
+-- | Find the point on the HD-Curve having a density relative to base+fog.
 --
 -- This function now uses the fitted mathematical model for higher precision.
 --
 -- Arguments:
--- * @target@: The target above base+fog to determine the speed point.
+-- * @targetOffset@: The target density ABOVE base+fog.
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
-findPoint :: Density -> HDCurve -> (Double, Density)
-findPoint target curve = (e, targetDensity)
+findPointAboveFog :: Density -> HDCurve -> (Double, Density)
+findPointAboveFog targetOffset curve = findPointAtDensity targetDensity curve
   where
-    targetDensity = basePlusFog curve + target
-    e = exposureForDensity curve targetDensity
+    targetDensity = basePlusFog curve + targetOffset
