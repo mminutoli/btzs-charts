@@ -67,6 +67,7 @@ library
                        BtzsCharts.HDCurveFitting
                        BtzsCharts.PlotCurves
                        BtzsCharts.PaperAnalysis
+                       BtzsCharts.FilmAnalysis
 
 executable btzs-charts
   import:              common-options
@@ -84,6 +85,9 @@ test-suite btzs-charts-test
   main-is:             Spec.hs
   other-modules:       BtzsChartsTests.TypesSpec
                        BtzsChartsTests.PaperAnalysisSpec
+                       BtzsChartsTests.FilmAnalysisSpec
+                       BtzsChartsTests.HDCurveFittingSpec
+                       BtzsChartsTests.Generators
   build-depends:       btzs-charts,
                        tasty,
                        hedgehog,

@@ -16,9 +16,15 @@ import Test.Tasty
 
 import BtzsChartsTests.TypesSpec(btzsChartsTypesTests)
 import BtzsChartsTests.PaperAnalysisSpec(btzsChartsPaperAnalysisTests)
+import BtzsChartsTests.FilmAnalysisSpec(btzsChartsFilmAnalysisTests)
+import BtzsChartsTests.HDCurveFittingSpec(btzsChartsHDCurveFittingTests)
 
 tests :: TestTree
-tests = testGroup "Tests" [btzsChartsTypesTests, btzsChartsPaperAnalysisTests]
+tests = testGroup "Tests" [ btzsChartsTypesTests
+                          , btzsChartsPaperAnalysisTests
+                          , btzsChartsFilmAnalysisTests
+                          , btzsChartsHDCurveFittingTests
+                          ]
 
 main :: IO ()
 main = defaultMain tests
