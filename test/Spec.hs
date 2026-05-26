@@ -15,9 +15,10 @@ module Main (main) where
 import Test.Tasty
 
 import BtzsChartsTests.TypesSpec(btzsChartsTypesTests)
+import BtzsChartsTests.PaperAnalysisSpec(btzsChartsPaperAnalysisTests)
 
 tests :: TestTree
-tests = testGroup "Tests" [btzsChartsTypesTests]
+tests = testGroup "Tests" [btzsChartsTypesTests, btzsChartsPaperAnalysisTests]
 
 main :: IO ()
 main = defaultMain tests

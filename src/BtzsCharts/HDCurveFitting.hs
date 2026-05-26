@@ -140,7 +140,7 @@ exposureForDensity curve targetD =
       -- Clamp the density slightly to avoid log of zero/negative at asymptotes
       d = max (dMin + 1e-6) (min (dMax - 1e-6) targetD)
       ratio = (dMax - dMin) / (d - dMin)
-  in if ratio <= 1.0 
+  in if ratio <= 1.0
      then infl -- Should not happen if d < dMax
      else infl - (1 / slope) * log (ratio - 1)
 
