@@ -34,11 +34,11 @@ import BtzsCharts.HDCurveFitting
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
 avgGradient :: HDCurve -> ProcessConfM Double
 avgGradient curve = do
-  (_, x, y) <- findIDmin curve
+  (x, y) <- findIDmin curve
   flareFactor <- asks flareCompensationFactor
   si <- asks scaleIndex
   let target = y + si * flareFactor
-  let (_, x', y') = findPoint target curve
+  let (x', y') = findPoint target curve
   return ((y' - y) / (x' - x))
 
 -- | The IDmin target according to the process configuration.
@@ -53,7 +53,7 @@ idMinTarget = do
 --
 -- Arguments:
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
-findIDmin :: HDCurve -> ProcessConfM (Int, Density, Density)
+findIDmin :: HDCurve -> ProcessConfM (Double, Density)
 findIDmin curve = do
   target <- idMinTarget
   return (findPoint target curve)
@@ -65,18 +65,18 @@ findIDmin curve = do
 --
 -- Arguments:
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
-findIDmax :: HDCurve -> ProcessConfM (Int, Density, Density)
+findIDmax :: HDCurve -> ProcessConfM (Double, Density)
 findIDmax curve = do
-  (_, _, d) <- findIDmin curve
+  (_, d) <- findIDmin curve
   flareFactor <- asks flareCompensationFactor
   si <- asks scaleIndex
   let target = d + si * flareFactor
-  let (p, x, y) = findPoint target curve
+  let (x, y) = findPoint target curve
   if y == target
-    then return (p, x, y)
+    then return (x, y)
     else do
       gradient <- avgGradient curve
-      return (-1, x/gradient, target)
+      return (x/gradient, target)
 
 -- | Compute the N-value of a HD-curve according to our process.
 --
@@ -84,8 +84,8 @@ findIDmax curve = do
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
 computeNvalue :: HDCurve -> ProcessConfM Double
 computeNvalue curve = do
-  (_, _, y_min) <- findIDmin curve
-  (_, _, y_max) <- findIDmax curve
+  (_, y_min) <- findIDmin curve
+  (_, y_max) <- findIDmax curve
   range <- asks zoneRange
   let density_range = y_min - y_max
       n = (density_range/7 * range) - range

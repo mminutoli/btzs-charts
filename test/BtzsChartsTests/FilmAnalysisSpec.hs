@@ -40,6 +40,6 @@ prop_IDmax_gt_IDmin :: Property
 prop_IDmax_gt_IDmin = property $ do
   conf <- forAll genProcessConfig
   curve <- forAll genHDCurve
-  let (_, x_min, _) = runReader (findIDmin curve) conf
-  let (_, x_max, _) = runReader (findIDmax curve) conf
+  let (x_min, _) = runReader (findIDmin curve) conf
+  let (x_max, _) = runReader (findIDmax curve) conf
   assert (x_max > x_min)

@@ -146,8 +146,8 @@ exposureForDensity curve targetD =
 -- Arguments:
 -- * @target@: The target above base+fog to determine the speed point.
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
-findPoint :: Density -> HDCurve -> (Int, Density, Density)
-findPoint target curve = (-1, e, targetDensity)
+findPoint :: Density -> HDCurve -> (Double, Density)
+findPoint target curve = (e, targetDensity)
   where
     targetDensity = basePlusFog curve + target
     e = exposureForDensity curve targetDensity
