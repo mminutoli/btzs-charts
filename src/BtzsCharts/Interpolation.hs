@@ -9,12 +9,19 @@ Stability   : experimental
 Portability : POSIX
 -}
 module BtzsCharts.Interpolation (
-    estimateCurve
+    estimateCurve,
+    timeForGradient
   ) where
 
+import BtzsCharts.Types
 import BtzsCharts.HDCurveFitting (HDCurve)
 
 -- | Estimates an HDCurve at a target development time by interpolating 
 --   the parameters of the closest measured curves.
 estimateCurve :: [HDCurve] -> Float -> HDCurve
 estimateCurve _ _ = undefined
+
+-- | Find the development time required to achieve a target average gradient.
+--   This involves calculating the gradients of measured curves and interpolating.
+timeForGradient :: [HDCurve] -> Double -> ProcessConfM Float
+timeForGradient _ _ = undefined
