@@ -18,12 +18,16 @@ import BtzsChartsTests.TypesSpec(btzsChartsTypesTests)
 import BtzsChartsTests.PaperAnalysisSpec(btzsChartsPaperAnalysisTests)
 import BtzsChartsTests.FilmAnalysisSpec(btzsChartsFilmAnalysisTests)
 import BtzsChartsTests.HDCurveFittingSpec(btzsChartsHDCurveFittingTests)
+import BtzsChartsTests.CLISpec(btzsChartsCLITests)
+import BtzsChartsTests.InterpolationSpec(btzsChartsInterpolationTests)
 
 tests :: TestTree
 tests = testGroup "Tests" [ btzsChartsTypesTests
                           , btzsChartsPaperAnalysisTests
                           , btzsChartsFilmAnalysisTests
                           , btzsChartsHDCurveFittingTests
+                          , btzsChartsCLITests
+                          , btzsChartsInterpolationTests
                           ]
 
 main :: IO ()
