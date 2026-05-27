@@ -20,7 +20,6 @@ module BtzsCharts.HDCurveFitting (
   exposureForDensity
   ) where
 
-import Control.Monad.Reader
 import BtzsCharts.Types
 import Data.Vector.Storable as VS
 import Numeric.GSL.Fitting (fitModel)
@@ -113,10 +112,10 @@ fitHDCurve stepWedgeDensities (devtime, materialDensities) =
 -- * @stepWedge@: The step-wedge used for our material test.
 -- * @materialTest@: The results of the material test.
 fitHDCurves :: StepTablet -> MaterialTest -> [HDCurve]
-fitHDCurves stepWedge test@(FilmTest _ _ _ meas) =
-  case validateMeasurements stepWedge test of
+fitHDCurves stepWedge (FilmTest d) =
+  case validateMeasurements stepWedge (FilmTest d) of
     Left err -> error $ "Validation failed: " Prelude.++ err
-    Right () -> Prelude.map (fitHDCurve stepWedgeDensities) (M.toList meas)
+    Right () -> Prelude.map (fitHDCurve stepWedgeDensities) (M.toList (filmMeasurements d))
   where
     stepWedgeDensities = densities stepWedge
 fitHDCurves _ (PaperTest{}) = error "Paper analysis not yet implemented"
@@ -126,19 +125,22 @@ fitHDCurves _ (PaperTest{}) = error "Paper analysis not yet implemented"
 -- Arguments:
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
 basePlusFog :: HDCurve -> Density
-basePlusFog curve = Prelude.head (modelParameters curve)
+basePlusFog curve = case modelParameters curve of
+  (dMin:_) -> dMin
+  [] -> error "basePlusFog: no parameters found"
 
 -- | Compute the Relative Log Exposure required to reach a specific density.
 -- This uses the inverse of the 4-parameter logistic model.
 exposureForDensity :: HDCurve -> Density -> Double
 exposureForDensity curve targetD =
-  let [dMin, dMax, slope, infl] = modelParameters curve
-      -- Clamp the density slightly to avoid log of zero/negative at asymptotes
-      d = max (dMin + 1e-6) (min (dMax - 1e-6) targetD)
-      ratio = (dMax - dMin) / (d - dMin)
-  in if ratio <= 1.0
-     then infl -- Should not happen if d < dMax
-     else infl - (1 / slope) * log (ratio - 1)
+  case modelParameters curve of
+    [dMin, dMax, slope, infl] ->
+      let d = max (dMin + 1e-6) (min (dMax - 1e-6) targetD)
+          ratio = (dMax - dMin) / (d - dMin)
+      in if ratio <= 1.0
+         then infl -- Should not happen if d < dMax
+         else infl - (1 / slope) * log (ratio - 1)
+    _ -> error "exposureForDensity: expected 4 parameters"
 
 -- | Find the point on the HD-Curve corresponding to an absolute density.
 findPointAtDensity :: Density -> HDCurve -> (Double, Density)

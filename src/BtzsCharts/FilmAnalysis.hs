@@ -71,17 +71,19 @@ findIDmax curve = do
   let (x, y) = findPointAtDensity targetDensity curve
   -- We consider the target reached if the density is within a small epsilon
   -- of what the model could actually produce (Dmax).
-  let [_, dMax, _, _] = modelParameters curve
-  if targetDensity < (dMax - 1e-3)
-    then return (x, y)
-    else do
-      -- If the curve doesn't reach the target density, we project linearly
-      -- using the average gradient starting from IDmin.
-      gradient <- avgGradient curve
-      let deltaLogE = (targetDensity - yMin) / gradient
-      let xMax = xMin + deltaLogE
-      -- Ensure we always return an exposure greater than the speed point
-      return (max (xMin + 0.3) xMax, targetDensity)
+  case modelParameters curve of
+    [_, dMax, _, _] ->
+      if targetDensity < (dMax - 1e-3)
+        then return (x, y)
+        else do
+          -- If the curve doesn't reach the target density, we project linearly
+          -- using the average gradient starting from IDmin.
+          gradient <- avgGradient curve
+          let deltaLogE = (targetDensity - yMin) / gradient
+          let xMax = xMin + deltaLogE
+          -- Ensure we always return an exposure greater than the speed point
+          return (max (xMin + 0.3) xMax, targetDensity)
+    _ -> error "findIDmax: expected 4 parameters"
 
 -- | Compute the N-value of a HD-curve according to our process.
 --

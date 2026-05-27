@@ -16,29 +16,14 @@ category:            Film Photography
 build-type:          Simple
 extra-doc-files:     README.md
                      CHANGELOG.md
-tested-with:         GHC == 9.8.4
+tested-with:         GHC == 9.10.3
 
 source-repository head
   type:                git
   location:            https://github.com/mminutoli/btzs-charts.git
 
 common common-options
-  build-depends:       base >= 4.19.1.0 && < 5,
-                       aeson,
-                       bytestring,
-                       colour,
-                       containers,
-                       Chart,
-                       Chart-diagrams,
-                       data-default-class,
-                       hmatrix-gsl,
-                       lens,
-                       mtl,
-                       palette,
-                       vector,
-                       text,
-                       optparse-applicative
-
+  build-depends:       base >= 4.19.1.0 && < 5
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities
@@ -71,12 +56,27 @@ library
                        BtzsCharts.FilmAnalysis
                        BtzsCharts.CLI
                        BtzsCharts.Interpolation
+  build-depends:       aeson,
+                       colour,
+                       containers,
+                       Chart,
+                       Chart-diagrams,
+                       data-default-class,
+                       hmatrix-gsl,
+                       lens,
+                       mtl,
+                       palette,
+                       vector,
+                       text,
+                       optparse-applicative
 
 executable btzs-charts
   import:              common-options
   hs-source-dirs:      app
   main-is:             Main.hs
-  build-depends:       btzs-charts
+  build-depends:       btzs-charts,
+                       aeson,
+                       bytestring
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N
@@ -94,6 +94,10 @@ test-suite btzs-charts-test
                        BtzsChartsTests.CLISpec
                        BtzsChartsTests.InterpolationSpec
   build-depends:       btzs-charts,
+                       aeson,
+                       vector,
+                       mtl,
+                       optparse-applicative,
                        tasty,
                        hedgehog,
                        tasty-hedgehog,

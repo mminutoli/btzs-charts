@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-|
 Module      : BtzsCharts.Interpolation
 Description : Interpolate parameters of characteristic curves.
@@ -27,10 +28,11 @@ estimateCurve filmCurves targetTime =
       (before, after) = Prelude.span (\c -> developmentTime c < targetTime) sortedCurves
 
       -- Handle cases where time matches exactly or is outside bounds
-      (curveA, curveB)
-        | Prelude.null before = (Prelude.head after, Prelude.head after)
-        | Prelude.null after  = (Prelude.last before, Prelude.last before)
-        | otherwise   = (Prelude.last before, Prelude.head after)
+      (curveA, curveB) = case (before, after) of
+        ([], (a:_)) -> (a, a)
+        ((_:_), []) -> (Prelude.last before, Prelude.last before)
+        ((_:_), (a:_)) -> (Prelude.last before, a)
+        ([], []) -> error "estimateCurve: no curves provided"
 
       devTimeA = developmentTime curveA
       devTimeB = developmentTime curveB
@@ -54,10 +56,11 @@ timeForGradient filmCurves targetGamma = do
   let sortedWithG = sortOn (developmentTime . Prelude.fst) (Prelude.zip filmCurves gammas)
       (before, after) = Prelude.span (\(_, g) -> g < targetGamma) sortedWithG
 
-      ((curveA, gA), (curveB, gB))
-        | Prelude.null before = (Prelude.head after, Prelude.head after)
-        | Prelude.null after  = (Prelude.last before, Prelude.last before)
-        | otherwise   = (Prelude.last before, Prelude.head after)
+      ((curveA, gA), (curveB, gB)) = case (before, after) of
+        ([], (a:_)) -> (a, a)
+        ((_:_), []) -> (Prelude.last before, Prelude.last before)
+        (_:_, (a:_)) -> (Prelude.last before, a)
+        ([], []) -> error "timeForGradient: no curves provided"
 
       timeDelta = if gA == gB then 0
                   else (targetGamma - gA) / (gB - gA)

@@ -37,11 +37,13 @@ paperSpeedPoint hd = do
 paperIdMax :: HDCurve -> ProcessConfM (Density, Double)
 paperIdMax hd = do
   maxDensityPercentage <- asks paperIdMaxPercentage
-  let [_, dmax, _, _] = modelParameters hd
-      bpf = basePlusFog hd
-      idMax = bpf + (dmax - bpf) * maxDensityPercentage
-      exposureAtIdMax = exposureForDensity hd idMax
-  return (idMax, exposureAtIdMax)
+  case modelParameters hd of
+    [_, dmax, _, _] ->
+      let bpf = basePlusFog hd
+          idMax = bpf + (dmax - bpf) * maxDensityPercentage
+          exposureAtIdMax = exposureForDensity hd idMax
+      in return (idMax, exposureAtIdMax)
+    _ -> error "paperIdMax: expected 4 parameters"
 
 -- | Calculate the Log Exposure Range (LER) or Exposure Scale (ES).
 -- LER = Log Exposure at IDmax - Log Exposure at Speed Point.

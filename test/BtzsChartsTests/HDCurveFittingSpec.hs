@@ -12,7 +12,6 @@ Portability : POSIX
 
 module BtzsChartsTests.HDCurveFittingSpec (btzsChartsHDCurveFittingTests) where
 
-import BtzsCharts.Types
 import BtzsCharts.HDCurveFitting
 import BtzsChartsTests.Generators
 
@@ -32,16 +31,19 @@ btzsChartsHDCurveFittingTests = testGroup "Tests for BtzsCharts.HDCurveFitting"
 prop_exposure_inverse :: Property
 prop_exposure_inverse = property $ do
   curve <- forAll genHDCurve
-  let [dMin, dMax, _, _] = modelParameters curve
-  -- Choose a target density within the sigmoid's active range
-  targetD <- forAll $ Gen.double (Range.linearFrac (dMin + 0.05) (dMax - 0.05))
-  let e = exposureForDensity curve targetD
-  let [calcD] = logisticModel (modelParameters curve) e
-  diff calcD (\a b -> abs (a - b) < 1e-4) targetD
+  case modelParameters curve of
+    [dMin, dMax, _, _] -> do
+      -- Choose a target density within the sigmoid's active range
+      targetD <- forAll $ Gen.double (Range.linearFrac (dMin + 0.05) (dMax - 0.05))
+      let e = exposureForDensity curve targetD
+      let [calcD] = logisticModel (modelParameters curve) e
+      diff calcD (\a b -> abs (a - b) < 1e-4) targetD
+    _ -> failure
 
 -- | Property: basePlusFog should return the first parameter (dMin) of the model.
 prop_basePlusFog_is_dMin :: Property
 prop_basePlusFog_is_dMin = property $ do
   curve <- forAll genHDCurve
-  let [dMin, _, _, _] = modelParameters curve
-  basePlusFog curve === dMin
+  case modelParameters curve of
+    (dMin:_) -> basePlusFog curve === dMin
+    [] -> failure

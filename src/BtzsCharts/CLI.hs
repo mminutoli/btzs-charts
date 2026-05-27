@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-|
 Module      : BtzsCharts.CLI
 Description : Command line interface for btzs-charts.
@@ -21,7 +22,7 @@ data BtzsOptions = BtzsOptions
   , optFilm   :: Maybe FilePath
   , optPaper  :: Maybe FilePath
   , optStepTablet :: FilePath
-  } deriving (Show, Eq)
+  } deriving stock (Show, Eq)
 
 parseBtzsOptions :: IO BtzsOptions
 parseBtzsOptions = execParser btzsInfo

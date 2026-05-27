@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-|
 Module      : BtzsCharts.Types
 Description : Types capturing the sensitometric experiments on film.
@@ -17,6 +18,8 @@ module BtzsCharts.Types (
   Density,
   DensityReadings,
   MaterialTest(..),
+  FilmTestData(..),
+  PaperTestData(..),
   StepTablet(..),
   ProcessConfiguration(..),
   validateMeasurements,
@@ -24,7 +27,6 @@ module BtzsCharts.Types (
   ) where
 
 import Data.Aeson
-import Data.Aeson.Types (SumEncoding(..))
 import GHC.Generics ( Generic )
 import Control.Monad.Reader
 
@@ -52,50 +54,64 @@ data StepTablet =
 instance ToJSON StepTablet
 instance FromJSON StepTablet
 
--- | Capture the settings and the results of testing materials.
-data MaterialTest
-  = FilmTest
-    { -- | The name of the tested material.
-      name :: !T.Text
-    , -- | The developer used.
-      developer :: !T.Text
-    , -- | the temperature of the development process.
-      temperature :: !Float
-    , -- | A map storing the results from testing.
-      measurements :: !(M.Map Float DensityReadings)
-    }
-  | PaperTest
-    { -- | The name of the tested material.
-      name :: !T.Text
-    , -- | The developer used.
-      developer :: !T.Text
-    , -- | the temperature of the development process.
-      temperature :: !Float
-    , -- | A map storing the results from testing.
-      paperMeasurements :: !(M.Map T.Text DensityReadings)
-    }
+-- | Data specific to a film test.
+data FilmTestData = FilmTestData
+  { filmName :: !T.Text
+  , filmDeveloper :: !T.Text
+  , filmTemperature :: !Float
+  , filmMeasurements :: !(M.Map Float DensityReadings)
+  }
   deriving stock (Generic, Show)
 
-aesonOptions :: Options
-aesonOptions = defaultOptions
-  { sumEncoding = defaultTaggedObject { tagFieldName = "type" }
-  , constructorTagModifier = \c -> if c == "FilmTest" then "Film" else "Paper"
-  , fieldLabelModifier = \f -> if f == "paperMeasurements" then "measurements" else f
+-- | Data specific to a paper test.
+data PaperTestData = PaperTestData
+  { paperName :: !T.Text
+  , paperDeveloper :: !T.Text
+  , paperTemperature :: !Float
+  , paperMeasurements :: !(M.Map T.Text DensityReadings)
   }
+  deriving stock (Generic, Show)
+
+-- | Capture the settings and the results of testing materials.
+data MaterialTest
+  = FilmTest FilmTestData
+  | PaperTest PaperTestData
+  deriving stock (Generic, Show)
 
 instance FromJSON MaterialTest where
-  parseJSON = genericParseJSON aesonOptions
+  parseJSON = withObject "MaterialTest" $ \v -> do
+    t <- v .: "type"
+    case t of
+      "Film" -> FilmTest <$> parseFilm v
+      "Paper" -> PaperTest <$> parsePaper v
+      _ -> fail $ "Unknown MaterialTest type: " ++ t
+    where
+      parseFilm v = FilmTestData <$> v .: "name" <*> v .: "developer" <*> v .: "temperature" <*> v .: "measurements"
+      parsePaper v = PaperTestData <$> v .: "name" <*> v .: "developer" <*> v .: "temperature" <*> v .: "measurements"
 
 instance ToJSON MaterialTest where
-  toJSON = genericToJSON aesonOptions
+  toJSON (FilmTest (FilmTestData n d t m)) =
+    object [ "type" .= ("Film" :: String)
+           , "name" .= n
+           , "developer" .= d
+           , "temperature" .= t
+           , "measurements" .= m
+           ]
+  toJSON (PaperTest (PaperTestData n d t m)) =
+    object [ "type" .= ("Paper" :: String)
+           , "name" .= n
+           , "developer" .= d
+           , "temperature" .= t
+           , "measurements" .= m
+           ]
 
 -- | Validate that the material test data exactly matches the length of the step tablet used.
 validateMeasurements :: StepTablet -> MaterialTest -> Either String ()
 validateMeasurements tablet test =
   let expectedLen = VS.length (densities tablet)
       rs = case test of
-             FilmTest _ _ _ meas -> M.elems meas
-             PaperTest _ _ _ meas -> M.elems meas
+             FilmTest d -> M.elems (filmMeasurements d)
+             PaperTest d -> M.elems (paperMeasurements d)
   in if all (\r -> VS.length r == expectedLen) rs
      then Right ()
      else Left "Mismatch between StepTablet length and measurement lengths."

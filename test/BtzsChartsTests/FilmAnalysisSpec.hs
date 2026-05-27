@@ -12,7 +12,6 @@ Portability : POSIX
 
 module BtzsChartsTests.FilmAnalysisSpec (btzsChartsFilmAnalysisTests) where
 
-import BtzsCharts.Types
 import BtzsCharts.FilmAnalysis
 import BtzsChartsTests.Generators
 

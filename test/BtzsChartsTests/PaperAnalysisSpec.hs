@@ -12,7 +12,6 @@ Portability : POSIX
 
 module BtzsChartsTests.PaperAnalysisSpec (btzsChartsPaperAnalysisTests) where
 
-import BtzsCharts.Types
 import BtzsCharts.HDCurveFitting
 import BtzsCharts.PaperAnalysis
 import BtzsChartsTests.Generators
@@ -21,8 +20,6 @@ import Control.Monad.Reader
 import Hedgehog
 import Test.Tasty ( TestTree, testGroup )
 import Test.Tasty.Hedgehog ( testProperty )
-
-import qualified Data.Vector.Storable as VS
 
 btzsChartsPaperAnalysisTests :: TestTree
 btzsChartsPaperAnalysisTests = testGroup "Tests for BtzsCharts.PaperAnalysis"
@@ -53,10 +50,12 @@ prop_ISO_Range_is_multiple_of_10 = property $ do
 prop_DynamicRange_bounds :: Property
 prop_DynamicRange_bounds = property $ do
   conf <- forAll genProcessConfig
-  curve@(HDCurve _ _ _ params) <- forAll genHDCurve
-  let [dMin, dMax, _, _] = params
-  let dr = runReader (paperDynamicRange curve) conf
-  assert (dr > 0 && dr < (dMax - dMin))
+  curve <- forAll genHDCurve
+  case modelParameters curve of
+    [dMin, dMax, _, _] -> do
+      let dr = runReader (paperDynamicRange curve) conf
+      assert (dr > 0 && dr < (dMax - dMin))
+    _ -> failure
 
 -- | Property: Passing the Speed Point Log Exposure into the model returns the target density.
 prop_inverse_verification_speedpoint :: Property
@@ -64,8 +63,9 @@ prop_inverse_verification_speedpoint = property $ do
   conf <- forAll genProcessConfig
   curve <- forAll genHDCurve
   let (targetD, e) = runReader (paperSpeedPoint curve) conf
-  let [calcD] = logisticModel (modelParameters curve) e
-  diff calcD (\a b -> abs (a - b) < 1e-4) targetD
+  case logisticModel (modelParameters curve) e of
+    [calcD] -> diff calcD (\a b -> abs (a - b) < 1e-4) targetD
+    _ -> failure
 
 -- | Property: Passing the IDmax Log Exposure into the model returns the target density.
 prop_inverse_verification_idmax :: Property
@@ -73,5 +73,6 @@ prop_inverse_verification_idmax = property $ do
   conf <- forAll genProcessConfig
   curve <- forAll genHDCurve
   let (targetD, e) = runReader (paperIdMax curve) conf
-  let [calcD] = logisticModel (modelParameters curve) e
-  diff calcD (\a b -> abs (a - b) < 1e-4) targetD
+  case logisticModel (modelParameters curve) e of
+    [calcD] -> diff calcD (\a b -> abs (a - b) < 1e-4) targetD
+    _ -> failure
