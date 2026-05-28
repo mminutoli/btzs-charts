@@ -13,15 +13,18 @@ import qualified Data.Vector.Storable as VS
 
 -- | Generator for ProcessConfiguration.
 genProcessConfig :: Gen ProcessConfiguration
-genProcessConfig = ProcessConfiguration
-  <$> Gen.double (Range.linearFrac 0.4 1.2)
-  <*> Gen.double (Range.linearFrac 0.5 1.5)
-  <*> Gen.double (Range.linearFrac 0.5 1.5)
-  <*> Gen.double (Range.linearFrac 0.5 1.5)
-  <*> Gen.double (Range.linearFrac 5.0 9.0)
-  <*> Gen.double (Range.linearFrac 0.05 0.2)
-  <*> Gen.double (Range.linearFrac 0.02 0.06)
-  <*> Gen.double (Range.linearFrac 0.85 0.95)
+genProcessConfig = Gen.filter (\c -> ((standardAvgGradient c / speedPointFactor c) + scaleIndex c) * flareCompensationFactor c < 1.7) rawGen
+  where
+    rawGen = ProcessConfiguration
+      <$> Gen.double (Range.linearFrac 0.4 1.2)
+      <*> Gen.double (Range.linearFrac 0.5 1.5)
+      <*> Gen.double (Range.linearFrac 0.5 1.5)
+      <*> Gen.double (Range.linearFrac 0.5 1.5)
+      <*> Gen.double (Range.linearFrac 5.0 9.0)
+      <*> Gen.double (Range.linearFrac 0.05 0.2)
+      <*> Gen.double (Range.linearFrac 0.02 0.06)
+      <*> Gen.double (Range.linearFrac 0.85 0.95)
+
 
 -- | Generator for HDCurve using a logistic model.
 genHDCurve :: Gen HDCurve

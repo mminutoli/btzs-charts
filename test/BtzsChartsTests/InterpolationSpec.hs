@@ -95,4 +95,4 @@ prop_timeForGradient_inverse = property $ do
   let estimated = estimateCurve curves targetTime
   let actualG = runReader (avgGradient estimated) conf
   
-  diff actualG (\a b -> abs (a - b) < 2e-1) targetG
+  diff actualG (\a b -> abs (a - b) < 5e-2) targetG

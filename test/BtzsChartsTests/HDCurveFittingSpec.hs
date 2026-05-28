@@ -36,8 +36,9 @@ prop_exposure_inverse = property $ do
       -- Choose a target density within the sigmoid's active range
       targetD <- forAll $ Gen.double (Range.linearFrac (dMin + 0.05) (dMax - 0.05))
       let e = exposureForDensity curve targetD
-      let [calcD] = logisticModel (modelParameters curve) e
-      diff calcD (\a b -> abs (a - b) < 1e-4) targetD
+      case logisticModel (modelParameters curve) e of
+        [calcD] -> diff calcD (\a b -> abs (a - b) < 1e-4) targetD
+        _ -> failure
     _ -> failure
 
 -- | Property: basePlusFog should return the first parameter (dMin) of the model.
