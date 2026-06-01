@@ -62,19 +62,19 @@ prop_monotonic_contrast = property $ do
   let c1 = cLow { developmentTime = 5, modelParameters = [0.1, 2.0, 1.5, 1.0] }
   let c2 = cHigh { developmentTime = 10, modelParameters = [0.1, 2.5, 3.0, 1.0] }
   let curves = [c1, c2]
-  
+
   t1 <- forAll $ Gen.float (Range.linearFrac 6.0 7.0)
   t2 <- forAll $ Gen.float (Range.linearFrac 8.0 9.0)
-  
+
   let curve1 = estimateCurve curves t1
   let curve2 = estimateCurve curves t2
-  
+
   let g1 = runReader (avgGradient curve1) conf
   let g2 = runReader (avgGradient curve2) conf
-  
+
   assert (g2 > g1)
 
--- | Property: If we find the time for a specific gradient, 
+-- | Property: If we find the time for a specific gradient,
 --   estimating a curve at that time should return that gradient.
 prop_timeForGradient_inverse :: Property
 prop_timeForGradient_inverse = property $ do
@@ -84,15 +84,15 @@ prop_timeForGradient_inverse = property $ do
   let c1 = cLow { developmentTime = 5, modelParameters = [0.1, 2.0, 1.5, 1.0] }
   let c2 = cHigh { developmentTime = 10, modelParameters = [0.1, 2.5, 3.0, 1.0] }
   let curves = [c1, c2]
-  
+
   let g1 = runReader (avgGradient c1) conf
   let g2 = runReader (avgGradient c2) conf
-  
+
   -- Choose a target gradient between the two
   targetG <- forAll $ Gen.double (Range.linearFrac (g1 + 0.01) (g2 - 0.01))
-  
+
   let targetTime = runReader (timeForGradient curves targetG) conf
   let estimated = estimateCurve curves targetTime
   let actualG = runReader (avgGradient estimated) conf
-  
+
   diff actualG (\a b -> abs (a - b) < 1e-1) targetG

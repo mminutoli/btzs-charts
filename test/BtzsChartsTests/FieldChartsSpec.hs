@@ -41,11 +41,11 @@ prop_speed_increases_with_devtime = property $ do
   sbr <- forAll $ Gen.double (Range.linearFrac 4.0 12.0)
   ler <- forAll $ Gen.double (Range.linearFrac 0.6 1.8)
   ratedIso <- forAll $ Gen.double (Range.linearFrac 50.0 400.0)
-  
+
   let stats = runReader (calculateCurveStats curves ratedIso ler sbr) conf
       sorted = sortOn statsDevTime stats
       speeds = map statsIsoSpeed sorted
-  
+
   -- S_1 < S_2 < S_3 ...
   assert (all (\(s1, s2) -> s1 < s2) (zip speeds (drop 1 speeds)))
 
@@ -57,11 +57,11 @@ prop_nvalue_decreases_with_gradient = property $ do
   sbr <- forAll $ Gen.double (Range.linearFrac 4.0 12.0)
   ler <- forAll $ Gen.double (Range.linearFrac 0.6 1.8)
   ratedIso <- forAll $ Gen.double (Range.linearFrac 50.0 400.0)
-  
+
   let stats = runReader (calculateCurveStats curves ratedIso ler sbr) conf
       sorted = sortOn statsGradient stats
       nvals = map statsNValue sorted
-  
+
   -- N_1 > N_2 > N_3 ... (larger gradient means more negative N-value)
   assert (all (\(n1, n2) -> n1 > n2) (zip nvals (drop 1 nvals)))
 
@@ -73,15 +73,15 @@ prop_calculations_match_formulas = property $ do
   sbr <- forAll $ Gen.double (Range.linearFrac 4.0 12.0)
   ler <- forAll $ Gen.double (Range.linearFrac 0.6 1.8)
   ratedIso <- forAll $ Gen.double (Range.linearFrac 50.0 400.0)
-  
+
   let stats = runReader (calculateCurveStats curves ratedIso ler sbr) conf
-  
+
   -- Reference speed point E_ref calculated on standardAvgGradient curve (0.58)
   forM_ stats $ \entry -> do
     -- Verify N-value matches formula: N = LER / (0.3 * G) - SBR
     let expectedN = ler / (0.3 * statsGradient entry) - sbr
     diff (statsNValue entry) (\a b -> abs (a - b) < 1e-6) expectedN
-    
+
     -- Verify relative ISO speed ratios: S_i / S_j = 2^((e_j - e_i) / 0.3)
     let speedsWithExposure = map (\e -> (statsIsoSpeed e, statsSpeedPoint e)) stats
     forM_ (zip speedsWithExposure (drop 1 speedsWithExposure)) $ \((s1, e1), (s2, e2)) -> do
@@ -97,15 +97,15 @@ prop_models_approximate_stats = property $ do
   sbr <- forAll $ Gen.double (Range.linearFrac 5.0 9.0)
   ler <- forAll $ Gen.double (Range.linearFrac 0.8 1.4)
   ratedIso <- forAll $ Gen.double (Range.linearFrac 100.0 200.0)
-  
+
   let stats = runReader (calculateCurveStats curves ratedIso ler sbr) conf
       model = fitFieldChartModel stats
-  
+
   -- Evaluating fitted models at measured N-values should yield values close to measured times/speeds
   forM_ stats $ \entry -> do
     let predTime = evaluateTimeModel model (statsNValue entry)
         predSpeed = evaluateSpeedModel model (statsNValue entry)
-    
+
     -- Development time within 2 minutes of measured
     diff predTime (\a b -> abs (a - b) < 2.0) (statsDevTime entry)
     -- ISO Speed within 20% of measured
