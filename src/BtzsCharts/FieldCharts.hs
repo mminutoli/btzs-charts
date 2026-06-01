@@ -56,14 +56,15 @@ filmSpeedPointExposure curve = do
   return (exposureForDensity curve (basePlusFog curve + speedDensity))
 
 -- | Compute curve statistics (G-bar, speed point exposure, ISO speed, and N-value)
---   for each measured film curve given a rated ISO speed, printing paper LER, and SBR in stops.
+--   for each measured film curve given a rated ISO speed, printing paper LER, and measuring range in stops.
 calculateCurveStats :: [HDCurve] -> Double -> Double -> Double -> ProcessConfM [FilmCurveStats]
-calculateCurveStats filmCurves ratedIso ler sbr = do
+calculateCurveStats filmCurves ratedIso ler mr = do
   -- 1. ISO Reference Calibration: Locate reference curve where G-bar = standardAvgGradient (typically 0.58)
   gRefTarget <- asks standardAvgGradient
   tRef <- timeForGradient filmCurves gRefTarget
   let refCurve = estimateCurve filmCurves tRef
   eRef <- filmSpeedPointExposure refCurve
+  normalSbr <- asks zoneRange
 
   -- 2. Compute stats for each measured curve in the family
   let computeStats curve = do
@@ -74,8 +75,8 @@ calculateCurveStats filmCurves ratedIso ler sbr = do
          -- EFS = ratedIso * 2^((E_ref - e_speed) / 0.3)
          let efs = ratedIso * (2.0 ** ((eRef - e_speed) / 0.3))
 
-         -- N = LER / (0.3 * G) - SBR
-         let nVal = ler / (0.3 * g) - sbr
+         -- N = MR * (1.0 - LER / (0.3 * G * normalSbr))
+         let nVal = mr * (1.0 - ler / (0.3 * g * normalSbr))
 
          return $ FilmCurveStats t g e_speed efs nVal
 

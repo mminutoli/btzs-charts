@@ -69,11 +69,11 @@ main = do
 
           let ler = findLerForGrade stepTablet paperMaterial (optGrade opts) config
               ratedIso = filmRatedIso filmData
-              sbrs = if Prelude.null (optSbrs opts) then [5.0, 6.0, 7.0, 8.0] else optSbrs opts
+              sbrs = if Prelude.null (optSbrs opts) then [3.0, 4.0, 5.0] else optSbrs opts
 
           putStrLn $ "LER for grade " ++ optGrade opts ++ " is: " ++ show ler
           putStrLn $ "Rated ISO is: " ++ show ratedIso
-          putStrLn $ "Generating field charts for SBRs: " ++ show sbrs
+          putStrLn $ "Generating field charts for measuring ranges (stops): " ++ show sbrs
 
           let sbrData = Prelude.map (\sbr ->
                 let stats = runReader (calculateCurveStats hdCurves ratedIso ler sbr) config

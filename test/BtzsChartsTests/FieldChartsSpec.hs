@@ -2,6 +2,7 @@
 module BtzsChartsTests.FieldChartsSpec (btzsChartsFieldChartsTests) where
 
 import BtzsCharts.FieldCharts
+import BtzsCharts.Types
 import BtzsCharts.HDCurveFitting (HDCurve(..))
 import BtzsChartsTests.Generators
 
@@ -17,7 +18,7 @@ import Data.List (sortOn)
 btzsChartsFieldChartsTests :: TestTree
 btzsChartsFieldChartsTests = testGroup "Tests for BtzsCharts.FieldCharts"
   [ testProperty "ISO speed increases with development time" prop_speed_increases_with_devtime
-  , testProperty "N-value decreases as average gradient increases" prop_nvalue_decreases_with_gradient
+  , testProperty "N-value increases as average gradient increases" prop_nvalue_increases_with_gradient
   , testProperty "N-value and ISO speed calculations match standard formulas" prop_calculations_match_formulas
   , testProperty "Analytical models approximate measured curve stats points" prop_models_approximate_stats
   ]
@@ -38,48 +39,48 @@ prop_speed_increases_with_devtime :: Property
 prop_speed_increases_with_devtime = property $ do
   conf <- forAll genProcessConfig
   curves <- testFilmCurves
-  sbr <- forAll $ Gen.double (Range.linearFrac 4.0 12.0)
+  mr <- forAll $ Gen.double (Range.linearFrac 4.0 12.0)
   ler <- forAll $ Gen.double (Range.linearFrac 0.6 1.8)
   ratedIso <- forAll $ Gen.double (Range.linearFrac 50.0 400.0)
 
-  let stats = runReader (calculateCurveStats curves ratedIso ler sbr) conf
+  let stats = runReader (calculateCurveStats curves ratedIso ler mr) conf
       sorted = sortOn statsDevTime stats
       speeds = map statsIsoSpeed sorted
 
   -- S_1 < S_2 < S_3 ...
   assert (all (\(s1, s2) -> s1 < s2) (zip speeds (drop 1 speeds)))
 
--- | Property: N-value must strictly decrease as average gradient increases.
-prop_nvalue_decreases_with_gradient :: Property
-prop_nvalue_decreases_with_gradient = property $ do
+-- | Property: N-value must strictly increase as average gradient increases.
+prop_nvalue_increases_with_gradient :: Property
+prop_nvalue_increases_with_gradient = property $ do
   conf <- forAll genProcessConfig
   curves <- testFilmCurves
-  sbr <- forAll $ Gen.double (Range.linearFrac 4.0 12.0)
+  mr <- forAll $ Gen.double (Range.linearFrac 4.0 12.0)
   ler <- forAll $ Gen.double (Range.linearFrac 0.6 1.8)
   ratedIso <- forAll $ Gen.double (Range.linearFrac 50.0 400.0)
 
-  let stats = runReader (calculateCurveStats curves ratedIso ler sbr) conf
+  let stats = runReader (calculateCurveStats curves ratedIso ler mr) conf
       sorted = sortOn statsGradient stats
       nvals = map statsNValue sorted
 
-  -- N_1 > N_2 > N_3 ... (larger gradient means more negative N-value)
-  assert (all (\(n1, n2) -> n1 > n2) (zip nvals (drop 1 nvals)))
+  -- N_1 < N_2 < N_3 ... (larger gradient means more positive N-value)
+  assert (all (\(n1, n2) -> n1 < n2) (zip nvals (drop 1 nvals)))
 
 -- | Property: Film stats matches exact mathematical formulas.
 prop_calculations_match_formulas :: Property
 prop_calculations_match_formulas = property $ do
   conf <- forAll genProcessConfig
   curves <- testFilmCurves
-  sbr <- forAll $ Gen.double (Range.linearFrac 4.0 12.0)
+  mr <- forAll $ Gen.double (Range.linearFrac 4.0 12.0)
   ler <- forAll $ Gen.double (Range.linearFrac 0.6 1.8)
   ratedIso <- forAll $ Gen.double (Range.linearFrac 50.0 400.0)
 
-  let stats = runReader (calculateCurveStats curves ratedIso ler sbr) conf
+  let stats = runReader (calculateCurveStats curves ratedIso ler mr) conf
 
   -- Reference speed point E_ref calculated on standardAvgGradient curve (0.58)
   forM_ stats $ \entry -> do
-    -- Verify N-value matches formula: N = LER / (0.3 * G) - SBR
-    let expectedN = ler / (0.3 * statsGradient entry) - sbr
+    -- Verify N-value matches formula: N = MR * (1 - LER / (0.3 * G * zoneRange))
+    let expectedN = mr * (1.0 - ler / (0.3 * statsGradient entry * zoneRange conf))
     diff (statsNValue entry) (\a b -> abs (a - b) < 1e-6) expectedN
 
     -- Verify relative ISO speed ratios: S_i / S_j = 2^((e_j - e_i) / 0.3)
@@ -94,11 +95,11 @@ prop_models_approximate_stats :: Property
 prop_models_approximate_stats = property $ do
   conf <- forAll genProcessConfig
   curves <- testFilmCurves
-  sbr <- forAll $ Gen.double (Range.linearFrac 5.0 9.0)
+  mr <- forAll $ Gen.double (Range.linearFrac 5.0 9.0)
   ler <- forAll $ Gen.double (Range.linearFrac 0.8 1.4)
   ratedIso <- forAll $ Gen.double (Range.linearFrac 100.0 200.0)
 
-  let stats = runReader (calculateCurveStats curves ratedIso ler sbr) conf
+  let stats = runReader (calculateCurveStats curves ratedIso ler mr) conf
       model = fitFieldChartModel stats
 
   -- Evaluating fitted models at measured N-values should yield values close to measured times/speeds
