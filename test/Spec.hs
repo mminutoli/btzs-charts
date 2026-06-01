@@ -20,6 +20,7 @@ import BtzsChartsTests.FilmAnalysisSpec(btzsChartsFilmAnalysisTests)
 import BtzsChartsTests.HDCurveFittingSpec(btzsChartsHDCurveFittingTests)
 import BtzsChartsTests.CLISpec(btzsChartsCLITests)
 import BtzsChartsTests.InterpolationSpec(btzsChartsInterpolationTests)
+import BtzsChartsTests.FieldChartsSpec(btzsChartsFieldChartsTests)
 
 tests :: TestTree
 tests = testGroup "Tests" [ btzsChartsTypesTests
@@ -28,6 +29,7 @@ tests = testGroup "Tests" [ btzsChartsTypesTests
                           , btzsChartsHDCurveFittingTests
                           , btzsChartsCLITests
                           , btzsChartsInterpolationTests
+                          , btzsChartsFieldChartsTests
                           ]
 
 main :: IO ()

@@ -56,6 +56,7 @@ library
                        BtzsCharts.FilmAnalysis
                        BtzsCharts.CLI
                        BtzsCharts.Interpolation
+                       BtzsCharts.FieldCharts
   build-depends:       aeson,
                        colour,
                        containers,
@@ -63,6 +64,7 @@ library
                        Chart-diagrams,
                        data-default-class,
                        hmatrix-gsl,
+                       hmatrix,
                        lens,
                        mtl,
                        palette,
@@ -93,6 +95,7 @@ test-suite btzs-charts-test
                        BtzsChartsTests.Generators
                        BtzsChartsTests.CLISpec
                        BtzsChartsTests.InterpolationSpec
+                       BtzsChartsTests.FieldChartsSpec
   build-depends:       btzs-charts,
                        aeson,
                        vector,
