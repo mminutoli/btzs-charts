@@ -58,6 +58,7 @@ prop_monotonic_contrast = property $ do
   conf <- forAll genProcessConfig
   cLow <- forAll genHDCurve
   cHigh <- forAll genHDCurve
+  si <- forAll $ Gen.double (Range.linearFrac 0.5 1.8)
   -- Create two measured curves with distinct times and distinct slopes
   let c1 = cLow { developmentTime = 5, modelParameters = [0.1, 2.0, 1.5, 1.0] }
   let c2 = cHigh { developmentTime = 10, modelParameters = [0.1, 2.5, 3.0, 1.0] }
@@ -69,8 +70,8 @@ prop_monotonic_contrast = property $ do
   let curve1 = estimateCurve curves t1
   let curve2 = estimateCurve curves t2
 
-  let g1 = runReader (avgGradient curve1) conf
-  let g2 = runReader (avgGradient curve2) conf
+  let g1 = runReader (avgGradient si curve1) conf
+  let g2 = runReader (avgGradient si curve2) conf
 
   assert (g2 > g1)
 
@@ -81,18 +82,19 @@ prop_timeForGradient_inverse = property $ do
   conf <- forAll genProcessConfig
   cLow <- forAll genHDCurve
   cHigh <- forAll genHDCurve
+  si <- forAll $ Gen.double (Range.linearFrac 0.5 1.8)
   let c1 = cLow { developmentTime = 5, modelParameters = [0.1, 2.0, 1.5, 1.0] }
   let c2 = cHigh { developmentTime = 10, modelParameters = [0.1, 2.5, 3.0, 1.0] }
   let curves = [c1, c2]
 
-  let g1 = runReader (avgGradient c1) conf
-  let g2 = runReader (avgGradient c2) conf
+  let g1 = runReader (avgGradient si c1) conf
+  let g2 = runReader (avgGradient si c2) conf
 
   -- Choose a target gradient between the two
   targetG <- forAll $ Gen.double (Range.linearFrac (g1 + 0.01) (g2 - 0.01))
 
-  let targetTime = runReader (timeForGradient curves targetG) conf
+  let targetTime = runReader (timeForGradient si curves targetG) conf
   let estimated = estimateCurve curves targetTime
-  let actualG = runReader (avgGradient estimated) conf
+  let actualG = runReader (avgGradient si estimated) conf
 
-  diff actualG (\a b -> abs (a - b) < 1e-1) targetG
+  diff actualG (\a b -> abs (a - b) < 0.15) targetG

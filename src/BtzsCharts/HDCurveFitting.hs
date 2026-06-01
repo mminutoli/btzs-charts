@@ -85,11 +85,21 @@ fitHDCurve xs_raw (devTime, ys_raw) =
     -- fitModel epsAbs epsRel maxIter (model, deriv) data initialGuess
     (bestParams, _) = fitModel 1e-8 1e-8 1000 (logisticModel, logisticDeriv) dat initialGuess
 
-    -- Generate a smooth curve, potentially extrapolating slightly
-    x0 = Prelude.minimum xs_list
-    x1 = max 3.0 (Prelude.maximum xs_list)
-    xs = [x0, x0 + 0.01 .. x1]
-    ys = Prelude.concatMap (logisticModel bestParams) xs
+-- | Prepare relative log exposure and density readings by converting
+-- step wedge densities to exposures (maxDensity - density) and reversing
+-- both vectors so they are in increasing order.
+prepareHDCurveData :: StepTablet -> DensityReadings -> (DensityReadings, DensityReadings)
+prepareHDCurveData stepWedge readings =
+  let stepWedgeDensities = densities stepWedge
+      maxDen = if VS.null stepWedgeDensities then 3.0 else VS.maximum stepWedgeDensities
+      xs = VS.map (\d -> maxDen - d) stepWedgeDensities
+      xs_rev = VS.fromList (Prelude.reverse (VS.toList xs))
+      ys_list = VS.toList readings
+      ys_rev = case (ys_list, Prelude.reverse ys_list) of
+                 (yFirst:_, yLast:_) | yFirst > yLast ->
+                   VS.fromList (Prelude.reverse ys_list)
+                 _ -> readings
+  in (xs_rev, ys_rev)
 
 -- | Build HDCurve for a series of material experiments.
 --
@@ -100,9 +110,9 @@ fitHDCurves :: StepTablet -> MaterialTest -> [HDCurve]
 fitHDCurves stepWedge (FilmTest d) =
   case validateMeasurements stepWedge (FilmTest d) of
     Left err -> error $ "Validation failed: " Prelude.++ err
-    Right () -> Prelude.map (fitHDCurve stepWedgeDensities) (M.toList (filmMeasurements d))
-  where
-    stepWedgeDensities = densities stepWedge
+    Right () -> Prelude.map (\(t, readings) ->
+      let (xs, ys) = prepareHDCurveData stepWedge readings
+      in fitHDCurve xs (t, ys)) (M.toList (filmMeasurements d))
 fitHDCurves stepWedge (PaperTest d) =
   case validateMeasurements stepWedge (PaperTest d) of
     Left err -> error $ "Validation failed: " Prelude.++ err
@@ -113,9 +123,8 @@ fitHDCurves stepWedge (PaperTest d) =
                        s    -> case reads s of
                                  [(val, "")] -> val
                                  _ -> 2.0
-      in fitHDCurve stepWedgeDensities (gradeVal, readings)) (M.toList (paperMeasurements d))
-  where
-    stepWedgeDensities = densities stepWedge
+          (xs, ys) = prepareHDCurveData stepWedge readings
+      in fitHDCurve xs (gradeVal, ys)) (M.toList (paperMeasurements d))
 
 -- | The value of based plus fog as read from the sensitometer.
 --
@@ -132,10 +141,12 @@ exposureForDensity :: HDCurve -> Density -> Double
 exposureForDensity curve targetD =
   case modelParameters curve of
     [dMin, dMax, slope, infl] ->
-      let d = max (dMin + 1e-6) (min (dMax - 1e-6) targetD)
+      let lower = min dMin dMax
+          upper = max dMin dMax
+          d = max (lower + 1e-6) (min (upper - 1e-6) targetD)
           ratio = (dMax - dMin) / (d - dMin)
       in if ratio <= 1.0
-         then infl -- Should not happen if d < dMax
+         then infl -- Should not happen if d is strictly between lower and upper
          else infl - (1 / slope) * log (ratio - 1)
     _ -> error "exposureForDensity: expected 4 parameters"
 

@@ -29,14 +29,18 @@ import BtzsCharts.HDCurveFitting
 --
 -- Arguments:
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
-avgGradient :: HDCurve -> ProcessConfM Double
-avgGradient curve = do
+avgGradient :: Double -> HDCurve -> ProcessConfM Double
+avgGradient si curve = do
   (xMin, yMin) <- findIDmin curve
   flareFactor <- asks flareCompensationFactor
-  si <- asks scaleIndex
   let targetDensity = yMin + si * flareFactor
-  let (xMax, yMax) = findPointAtDensity targetDensity curve
-  return ((yMax - yMin) / (xMax - xMin))
+  case modelParameters curve of
+    [dMin, dMax, _, _] -> do
+      let activeMax = dMin + (dMax - dMin) * 0.95
+          yMaxTarget = min targetDensity activeMax
+          (xMax, yMax) = findPointAtDensity yMaxTarget curve
+      return ((yMax - yMin) / (xMax - xMin))
+    _ -> error "avgGradient: expected 4 parameters"
 
 -- | The IDmin target according to the process configuration.
 idMinTarget :: ProcessConfM Density
@@ -62,11 +66,10 @@ findIDmin curve = do
 --
 -- Arguments:
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
-findIDmax :: HDCurve -> ProcessConfM (Double, Density)
-findIDmax curve = do
+findIDmax :: Double -> HDCurve -> ProcessConfM (Double, Density)
+findIDmax si curve = do
   (xMin, yMin) <- findIDmin curve
   flareFactor <- asks flareCompensationFactor
-  si <- asks scaleIndex
   let targetDensity = yMin + si * flareFactor
   let (x, y) = findPointAtDensity targetDensity curve
   -- We consider the target reached if the density is within a small epsilon
@@ -78,7 +81,7 @@ findIDmax curve = do
         else do
           -- If the curve doesn't reach the target density, we project linearly
           -- using the average gradient starting from IDmin.
-          gradient <- avgGradient curve
+          gradient <- avgGradient si curve
           let deltaLogE = (targetDensity - yMin) / gradient
           let xMax = xMin + deltaLogE
           -- Ensure we always return an exposure greater than the speed point
@@ -89,10 +92,10 @@ findIDmax curve = do
 --
 -- Arguments:
 -- * @curve@: The HD-Curve data fit from the sensitometric measurements.
-computeNvalue :: HDCurve -> ProcessConfM Double
-computeNvalue curve = do
+computeNvalue :: Double -> HDCurve -> ProcessConfM Double
+computeNvalue si curve = do
   (_, yMin) <- findIDmin curve
-  (_, yMax) <- findIDmax curve
+  (_, yMax) <- findIDmax si curve
   range <- asks zoneRange
   let densityRange = yMax - yMin
       n = (densityRange / 7 * range) - range
@@ -104,5 +107,5 @@ computeNvalue curve = do
 --
 -- Arguments:
 -- * a list of hdCurves.
-computeNvalues :: [HDCurve] -> ProcessConfM [Double]
-computeNvalues = Prelude.mapM computeNvalue
+computeNvalues :: Double -> [HDCurve] -> ProcessConfM [Double]
+computeNvalues si = Prelude.mapM (computeNvalue si)

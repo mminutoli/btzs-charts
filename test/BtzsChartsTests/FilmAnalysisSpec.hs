@@ -17,6 +17,8 @@ import BtzsChartsTests.Generators
 
 import Control.Monad.Reader
 import Hedgehog
+import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
 import Test.Tasty ( TestTree, testGroup )
 import Test.Tasty.Hedgehog ( testProperty )
 
@@ -31,7 +33,8 @@ prop_avgGradient_is_positive :: Property
 prop_avgGradient_is_positive = property $ do
   conf <- forAll genProcessConfig
   curve <- forAll genHDCurve
-  let g = runReader (avgGradient curve) conf
+  si <- forAll $ Gen.double (Range.linearFrac 0.5 1.8)
+  let g = runReader (avgGradient si curve) conf
   assert (g > 0)
 
 -- | Property: findIDmax should return a higher exposure (x) than findIDmin.
@@ -39,6 +42,7 @@ prop_IDmax_gt_IDmin :: Property
 prop_IDmax_gt_IDmin = property $ do
   conf <- forAll genProcessConfig
   curve <- forAll genHDCurve
+  si <- forAll $ Gen.double (Range.linearFrac 0.5 1.8)
   let (x_min, _) = runReader (findIDmin curve) conf
-  let (x_max, _) = runReader (findIDmax curve) conf
+  let (x_max, _) = runReader (findIDmax si curve) conf
   assert (x_max > x_min)

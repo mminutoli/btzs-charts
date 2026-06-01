@@ -4,13 +4,13 @@ import BtzsCharts.Types
 import BtzsCharts.HDCurveFitting
 import BtzsCharts.PlotCurves
 import BtzsCharts.CLI
-import BtzsCharts.FieldCharts (calculateCurveStats, fitFieldChartModel)
+import BtzsCharts.FieldCharts (FilmCurveStats(..), calculateCurveStats, fitFieldChartModel)
 import BtzsCharts.PaperAnalysis (logExposureRange)
 
 import Data.ByteString.Lazy as BL
 import Data.Aeson
 import System.Exit (exitFailure)
-import Control.Monad (when)
+import Control.Monad (when, forM_)
 import Control.Monad.Reader (runReader)
 import Data.List (minimumBy)
 import qualified Data.Text as T
@@ -54,6 +54,9 @@ main = do
       case material of
         FilmTest filmData -> do
           let hdCurves = fitHDCurves stepTablet material
+          putStrLn "Fitted HD curves:"
+          forM_ hdCurves $ \c ->
+            putStrLn $ "  Time: " ++ show (developmentTime c) ++ " min, Params: " ++ show (modelParameters c)
 
           -- Save standard HD Curves plot
           let plot = plotHDCurves hdCurves
@@ -80,8 +83,18 @@ main = do
                     model = fitFieldChartModel stats
                 in (sbr, model, stats)) sbrs
 
-              filmNameStr = T.unpack (filmName filmData)
+          forM_ sbrData $ \(sbr, _, stats) -> do
+            putStrLn $ "Stats for SBR " ++ show sbr ++ ":"
+            forM_ stats $ \s ->
+              putStrLn $ "  Time: " ++ show (statsDevTime s) ++ " min, G: " ++ show (statsGradient s) ++ ", Speed: " ++ show (statsIsoSpeed s) ++ ", N: " ++ show (statsNValue s)
+
+          let filmNameStr = T.unpack (filmName filmData)
               filmDevStr = T.unpack (filmDeveloper filmData)
+              (paperNameStr, paperDevStr) =
+                case paperMaterial of
+                  PaperTest pd -> (T.unpack (paperName pd), T.unpack (paperDeveloper pd))
+                  FilmTest _ -> ("Unknown Paper", "Unknown Dev")
+              gradeStr = optGrade opts
 
               -- Sanitize film and developer names for filename use
               sanitize c
@@ -89,13 +102,11 @@ main = do
                 | otherwise = c
               cleanName = Prelude.map sanitize filmNameStr
               cleanDev = Prelude.map sanitize filmDevStr
-
               prefix = cleanName ++ "_" ++ cleanDev
               devtimeFile = prefix ++ "_devtime.svg"
               speedFile = prefix ++ "_speed.svg"
-
-              devtimeLayout = plotFieldChartDevTime filmNameStr filmDevStr sbrData
-              speedLayout = plotFieldChartSpeed filmNameStr filmDevStr sbrData
+              devtimeLayout = plotFieldChartDevTime filmNameStr filmDevStr paperNameStr paperDevStr gradeStr sbrData
+              speedLayout = plotFieldChartSpeed filmNameStr filmDevStr paperNameStr paperDevStr gradeStr sbrData
 
           saveToFile devtimeLayout devtimeFile
           saveToFile speedLayout speedFile

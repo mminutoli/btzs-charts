@@ -127,8 +127,6 @@ data ProcessConfiguration =
     speedPointFactor :: !Double,
     -- | Factor used to compensate for flare effects.
     flareCompensationFactor :: !Double,
-    -- | Scale Index is a personalized value for the print exposure scale.
-    scaleIndex :: !Double,
     -- | Number of zones to use to determine the N values
     zoneRange :: !Double,
     -- | Density above base+fog used to determine the film speed point (typically 0.1).

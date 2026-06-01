@@ -50,9 +50,9 @@ estimateCurve filmCurves targetTime =
 
 -- | Find the development time required to achieve a target average gradient.
 --   This involves calculating the gradients of measured curves and interpolating.
-timeForGradient :: [HDCurve] -> Double -> ProcessConfM Float
-timeForGradient filmCurves targetGamma = do
-  gammas <- Prelude.mapM avgGradient filmCurves
+timeForGradient :: Double -> [HDCurve] -> Double -> ProcessConfM Float
+timeForGradient si filmCurves targetGamma = do
+  gammas <- Prelude.mapM (avgGradient si) filmCurves
   let sortedWithG = sortOn (developmentTime . Prelude.fst) (Prelude.zip filmCurves gammas)
       (before, after) = Prelude.span (\(_, g) -> g < targetGamma) sortedWithG
 

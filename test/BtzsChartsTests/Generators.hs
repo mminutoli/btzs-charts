@@ -13,11 +13,10 @@ import qualified Data.Vector.Storable as VS
 
 -- | Generator for ProcessConfiguration.
 genProcessConfig :: Gen ProcessConfiguration
-genProcessConfig = Gen.filter (\c -> ((standardAvgGradient c / speedPointFactor c) + scaleIndex c) * flareCompensationFactor c < 1.7) rawGen
+genProcessConfig = Gen.filter (\c -> (standardAvgGradient c / speedPointFactor c) * flareCompensationFactor c < 1.7) rawGen
   where
     rawGen = ProcessConfiguration
       <$> Gen.double (Range.linearFrac 0.4 1.2)
-      <*> Gen.double (Range.linearFrac 0.5 1.5)
       <*> Gen.double (Range.linearFrac 0.5 1.5)
       <*> Gen.double (Range.linearFrac 0.5 1.5)
       <*> Gen.double (Range.linearFrac 5.0 9.0)

@@ -77,19 +77,25 @@ photographicAxis xs =
 
 saveToFile :: ToRenderable p => p -> FilePath -> IO()
 saveToFile layout path = do
-  let opts = fo_size .~ (600, 600) $ def
+  let opts = fo_size .~ (800, 600) $ def
   _ <- renderableToFile opts path renderable
   return ()
   where
     renderable = toRenderable layout
 
 -- | Plot the Development Time vs N-Value for multiple SBRs on the same layout.
-plotFieldChartDevTime :: String -> String -> [(Double, FieldChartModel, [FilmCurveStats])] -> Layout Double Double
-plotFieldChartDevTime filmName developer sbrData = layout
+plotFieldChartDevTime :: String -> String -> String -> String -> String -> [(Double, FieldChartModel, [FilmCurveStats])] -> Layout Double Double
+plotFieldChartDevTime filmName developer paperName paperDev _grade sbrData = layout
   where
+    allNValues = [statsNValue stat | (_, _, stats) <- sbrData, stat <- stats]
+    minN = if Prelude.null allNValues then -3.0 else Prelude.minimum allNValues
+    maxN = if Prelude.null allNValues then 3.0 else Prelude.maximum allNValues
+    rangeStart = minN - 0.5
+    rangeEnd = maxN + 0.5
+    nRange = [rangeStart, rangeStart + 0.1 .. rangeEnd]
+
     plotsForSbr i (sbr, model, stats) =
       let clr = color i
-          nRange = [-3.0, -2.9 .. 3.0]
           lineVals = [(n, realToFrac (evaluateTimeModel model n)) | n <- nRange]
           linePlot = plot_lines_title .~ printf "SBR %.1f stops (Fit)" sbr
                    $ plot_lines_style . line_color .~ clr
@@ -107,7 +113,7 @@ plotFieldChartDevTime filmName developer sbrData = layout
 
     allPlots = Prelude.concat $ Prelude.zipWith plotsForSbr [0..] sbrData
 
-    layout = layout_title .~ printf "Development Time vs N-Value - %s (%s)" filmName developer
+    layout = layout_title .~ printf "%s (%s) |  %s (%s)" filmName developer paperName paperDev
       $ layout_plots .~ allPlots
       $ layout_legend .~ Just (def & legend_orientation .~ LOCols 1)
       $ layout_x_axis . laxis_title .~ "N-Value"
@@ -120,19 +126,25 @@ plotFieldChartDevTime filmName developer sbrData = layout
       in opaque $ palette !! (i `mod` length palette)
 
 -- | Plot the Effective ISO Speed vs N-Value for multiple SBRs on the same layout.
-plotFieldChartSpeed :: String -> String -> [(Double, FieldChartModel, [FilmCurveStats])] -> Layout Double Double
-plotFieldChartSpeed filmName developer sbrData = layout
+plotFieldChartSpeed :: String -> String -> String -> String -> String -> [(Double, FieldChartModel, [FilmCurveStats])] -> Layout Double Double
+plotFieldChartSpeed filmName developer paperName paperDev _grade sbrData = layout
   where
+    allNValues = [statsNValue stat | (_, _, stats) <- sbrData, stat <- stats]
+    minN = if Prelude.null allNValues then -3.0 else Prelude.minimum allNValues
+    maxN = if Prelude.null allNValues then 3.0 else Prelude.maximum allNValues
+    rangeStart = minN - 0.5
+    rangeEnd = maxN + 0.5
+    nRange = [rangeStart, rangeStart + 0.1 .. rangeEnd]
+
     plotsForSbr i (sbr, model, stats) =
       let clr = color i
-          nRange = [-3.0, -2.9 .. 3.0]
-          lineVals = [(n, evaluateSpeedModel model n) | n <- nRange]
+          lineVals = [(n, log2 (evaluateSpeedModel model n)) | n <- nRange]
           linePlot = plot_lines_title .~ printf "SBR %.1f stops (Fit)" sbr
                    $ plot_lines_style . line_color .~ clr
                    $ plot_lines_style . line_width .~ 2.5
                    $ plot_lines_values .~ [lineVals]
                    $ def
-          pts = [(statsNValue stat, statsIsoSpeed stat) | stat <- stats]
+          pts = [(statsNValue stat, log2 (statsIsoSpeed stat)) | stat <- stats]
           pointsPlot = plot_points_title .~ printf "SBR %.1f stops (Data)" sbr
                      $ plot_points_style . point_color .~ clr
                      $ plot_points_style . point_radius .~ 4.0
@@ -143,15 +155,54 @@ plotFieldChartSpeed filmName developer sbrData = layout
 
     allPlots = Prelude.concat $ Prelude.zipWith plotsForSbr [0..] sbrData
 
-    layout = layout_title .~ printf "Effective ISO Speed vs N-Value - %s (%s)" filmName developer
+    layout = layout_title .~ printf "%s (%s) | %s (%s)" filmName developer paperName paperDev
       $ layout_plots .~ allPlots
       $ layout_legend .~ Just (def & legend_orientation .~ LOCols 1)
       $ layout_x_axis . laxis_title .~ "N-Value"
       $ layout_y_axis . laxis_title .~ "Effective ISO Speed"
+      $ layout_y_axis . laxis_generate .~ isoSpeedAxis
       $ def
 
     color i =
       let numColors = Prelude.max 3 (Prelude.min 9 (length sbrData))
           palette = brewerSet Set1 numColors
       in opaque $ palette !! (i `mod` length palette)
+
+log2 :: Double -> Double
+log2 x = if x <= 0 then 0.0 else log x / log 2
+
+isoSpeedAxis :: AxisFn Double
+isoSpeedAxis xs =
+  let ad = autoScaledAxis def xs
+      minLog = if null xs then 0.0 else minimum xs
+      maxLog = if null xs then 10.0 else maximum xs
+
+      isoSequence :: [(Int, String)]
+      isoSequence = [
+          (-20, "1"), (-19, "1.2"), (-18, "1.6"), (-17, "2"), (-16, "2.5"), (-15, "3.2"),
+          (-14, "4"), (-13, "5"), (-12, "6"), (-11, "8"), (-10, "10"), (-9, "12"),
+          (-8, "16"), (-7, "20"), (-6, "25"), (-5, "32"), (-4, "40"), (-3, "50"),
+          (-2, "64"), (-1, "80"), (0, "100"), (1, "125"), (2, "160"), (3, "200"),
+          (4, "250"), (5, "320"), (6, "400"), (7, "500"), (8, "640"), (9, "800"),
+          (10, "1000"), (11, "1250"), (12, "1600"), (13, "2000"), (14, "2500"),
+          (15, "3200"), (16, "4000"), (17, "5000"), (18, "6400"), (19, "8000"),
+          (20, "10000")
+        ]
+
+      margin = 0.5
+      ticksData = [ (vLog, speedStr)
+                  | (k, speedStr) <- isoSequence
+                  , let vLog = log2 100 + fromIntegral k / 3.0
+                  , vLog >= minLog - margin
+                  , vLog <= maxLog + margin
+                  ]
+
+      adTicks = [ (vLog, 10) | (vLog, _) <- ticksData ]
+      adLabels = [[ (vLog, speedStr) | (vLog, speedStr) <- ticksData ]]
+      adGrid = [ vLog | (vLog, _) <- ticksData ]
+
+  in ad { _axis_ticks = adTicks
+        , _axis_labels = adLabels
+        , _axis_grid = adGrid
+        }
 

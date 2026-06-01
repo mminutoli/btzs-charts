@@ -53,3 +53,7 @@ TAGS
 
 # other
 .DS_Store
+
+# Generated output files
+*.svg
+btzs-charts.json

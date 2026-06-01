@@ -1,0 +1,12 @@
+{
+  "type": "Paper",
+  "name": "Arista Ultra.EDU Pearl",
+  "developer": "Generic Paper Dev",
+  "temperature": 20.0,
+  "measurements": {
+    "2": [
+        1.91, 1.91, 1.91, 1.91, 1.91, 1.91, 1.91, 1.91,
+        1.84, 1.42, 0.98, 0.68, 0.44, 0.33, 0.24, 0.18, 0.15, 0.13, 0.13, 0.13, 0.13
+        ]
+    }
+}

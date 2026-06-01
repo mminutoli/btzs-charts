@@ -61,7 +61,7 @@ calculateCurveStats :: [HDCurve] -> Double -> Double -> Double -> ProcessConfM [
 calculateCurveStats filmCurves ratedIso ler mr = do
   -- 1. ISO Reference Calibration: Locate reference curve where G-bar = standardAvgGradient (typically 0.58)
   gRefTarget <- asks standardAvgGradient
-  tRef <- timeForGradient filmCurves gRefTarget
+  tRef <- timeForGradient ler filmCurves gRefTarget
   let refCurve = estimateCurve filmCurves tRef
   eRef <- filmSpeedPointExposure refCurve
   normalSbr <- asks zoneRange
@@ -69,7 +69,7 @@ calculateCurveStats filmCurves ratedIso ler mr = do
   -- 2. Compute stats for each measured curve in the family
   let computeStats curve = do
          let t = developmentTime curve
-         g <- avgGradient curve
+         g <- avgGradient ler curve
          e_speed <- filmSpeedPointExposure curve
 
          -- EFS = ratedIso * 2^((E_ref - e_speed) / 0.3)
