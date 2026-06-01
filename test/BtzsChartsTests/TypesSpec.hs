@@ -62,9 +62,10 @@ genMaterialTest = Gen.choice [genFilm, genPaper]
       n <- Gen.text (Range.constant 0 100) Gen.alphaNum
       d <- Gen.text (Range.constant 0 100) Gen.alphaNum
       t <- Gen.float (Range.linearFrac 0 30)
+      iso <- Gen.double (Range.linearFrac 50 400)
       m <- Gen.map (Range.linear 5 10)
              ((,) <$> Gen.float (Range.linearFrac 0 30) <*> genDensityReadings)
-      return $ FilmTest (FilmTestData n d t m)
+      return $ FilmTest (FilmTestData n d t iso m)
     genPaper = do
       n <- Gen.text (Range.constant 0 100) Gen.alphaNum
       d <- Gen.text (Range.constant 0 100) Gen.alphaNum
@@ -83,11 +84,12 @@ prop_MaterialTest_ToJSON_representation = property $ do
 
     -- The expected representation of the MaterialTest
     expectedValue = case aMaterialTest of
-      FilmTest (FilmTestData n d t m) ->
+      FilmTest (FilmTestData n d t iso m) ->
         object [ "type" .= ("Film" :: String)
                , "name" .= n
                , "developer" .= d
                , "temperature" .= t
+               , "ratedIso" .= iso
                , "measurements" .= m ]
       PaperTest (PaperTestData n d t m) ->
         object [ "type" .= ("Paper" :: String)

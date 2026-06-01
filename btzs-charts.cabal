@@ -78,7 +78,9 @@ executable btzs-charts
   main-is:             Main.hs
   build-depends:       btzs-charts,
                        aeson,
-                       bytestring
+                       bytestring,
+                       mtl,
+                       text
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N

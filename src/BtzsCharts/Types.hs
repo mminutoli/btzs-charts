@@ -59,6 +59,7 @@ data FilmTestData = FilmTestData
   { filmName :: !T.Text
   , filmDeveloper :: !T.Text
   , filmTemperature :: !Float
+  , filmRatedIso :: !Double
   , filmMeasurements :: !(M.Map Float DensityReadings)
   }
   deriving stock (Generic, Show)
@@ -86,15 +87,16 @@ instance FromJSON MaterialTest where
       "Paper" -> PaperTest <$> parsePaper v
       _ -> fail $ "Unknown MaterialTest type: " ++ t
     where
-      parseFilm v = FilmTestData <$> v .: "name" <*> v .: "developer" <*> v .: "temperature" <*> v .: "measurements"
+      parseFilm v = FilmTestData <$> v .: "name" <*> v .: "developer" <*> v .: "temperature" <*> v .: "ratedIso" <*> v .: "measurements"
       parsePaper v = PaperTestData <$> v .: "name" <*> v .: "developer" <*> v .: "temperature" <*> v .: "measurements"
 
 instance ToJSON MaterialTest where
-  toJSON (FilmTest (FilmTestData n d t m)) =
+  toJSON (FilmTest (FilmTestData n d t iso m)) =
     object [ "type" .= ("Film" :: String)
            , "name" .= n
            , "developer" .= d
            , "temperature" .= t
+           , "ratedIso" .= iso
            , "measurements" .= m
            ]
   toJSON (PaperTest (PaperTestData n d t m)) =

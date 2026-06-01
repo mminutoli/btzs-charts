@@ -22,6 +22,8 @@ data BtzsOptions = BtzsOptions
   , optFilm   :: Maybe FilePath
   , optPaper  :: Maybe FilePath
   , optStepTablet :: FilePath
+  , optSbrs   :: [Double]
+  , optGrade  :: String
   } deriving stock (Show, Eq)
 
 parseBtzsOptions :: IO BtzsOptions
@@ -58,4 +60,15 @@ optsParser = BtzsOptions
      <> metavar "STEP_TABLET_JSON"
      <> help "Path to the step tablet definition JSON file"
      <> value "./data/Stauffer-21steps.json"
+     <> showDefault )
+  <*> many (option auto
+      ( long "sbr"
+     <> metavar "SBR"
+     <> help "Subject Brightness Range in stops (can be specified multiple times)" ))
+  <*> strOption
+      ( long "grade"
+     <> short 'g'
+     <> metavar "GRADE"
+     <> help "Paper grade to use for LER calculation"
+     <> value "2"
      <> showDefault )

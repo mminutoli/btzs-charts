@@ -11,6 +11,8 @@ Portability : POSIX
 
 module BtzsCharts.PlotCurves(
     plotHDCurves,
+    plotFieldChartDevTime,
+    plotFieldChartSpeed,
     saveToFile
   ) where
 
@@ -19,6 +21,7 @@ import Data.Default.Class
 import Data.Colour(opaque)
 import Data.Colour.Palette.BrewerSet
 import BtzsCharts.HDCurveFitting (HDCurve(..))
+import BtzsCharts.FieldCharts (FieldChartModel(..), FilmCurveStats(..), evaluateTimeModel, evaluateSpeedModel)
 import Graphics.Rendering.Chart
 import Graphics.Rendering.Chart.Backend.Diagrams
 import Data.Vector.Storable(toList)
@@ -79,3 +82,76 @@ saveToFile layout path = do
   return ()
   where
     renderable = toRenderable layout
+
+-- | Plot the Development Time vs N-Value for multiple SBRs on the same layout.
+plotFieldChartDevTime :: String -> String -> [(Double, FieldChartModel, [FilmCurveStats])] -> Layout Double Double
+plotFieldChartDevTime filmName developer sbrData = layout
+  where
+    plotsForSbr i (sbr, model, stats) =
+      let clr = color i
+          nRange = [-3.0, -2.9 .. 3.0]
+          lineVals = [(n, realToFrac (evaluateTimeModel model n)) | n <- nRange]
+          linePlot = plot_lines_title .~ printf "SBR %.1f stops (Fit)" sbr
+                   $ plot_lines_style . line_color .~ clr
+                   $ plot_lines_style . line_width .~ 2.5
+                   $ plot_lines_values .~ [lineVals]
+                   $ def
+          pts = [(statsNValue stat, realToFrac (statsDevTime stat)) | stat <- stats]
+          pointsPlot = plot_points_title .~ printf "SBR %.1f stops (Data)" sbr
+                     $ plot_points_style . point_color .~ clr
+                     $ plot_points_style . point_radius .~ 4.0
+                     $ plot_points_style . point_shape .~ PointShapeCircle
+                     $ plot_points_values .~ pts
+                     $ def
+      in [toPlot linePlot, toPlot pointsPlot]
+
+    allPlots = Prelude.concat $ Prelude.zipWith plotsForSbr [0..] sbrData
+
+    layout = layout_title .~ printf "Development Time vs N-Value - %s (%s)" filmName developer
+      $ layout_plots .~ allPlots
+      $ layout_legend .~ Just (def & legend_orientation .~ LOCols 1)
+      $ layout_x_axis . laxis_title .~ "N-Value"
+      $ layout_y_axis . laxis_title .~ "Development Time (min)"
+      $ def
+
+    color i =
+      let numColors = Prelude.max 3 (Prelude.min 9 (length sbrData))
+          palette = brewerSet Set1 numColors
+      in opaque $ palette !! (i `mod` length palette)
+
+-- | Plot the Effective ISO Speed vs N-Value for multiple SBRs on the same layout.
+plotFieldChartSpeed :: String -> String -> [(Double, FieldChartModel, [FilmCurveStats])] -> Layout Double Double
+plotFieldChartSpeed filmName developer sbrData = layout
+  where
+    plotsForSbr i (sbr, model, stats) =
+      let clr = color i
+          nRange = [-3.0, -2.9 .. 3.0]
+          lineVals = [(n, evaluateSpeedModel model n) | n <- nRange]
+          linePlot = plot_lines_title .~ printf "SBR %.1f stops (Fit)" sbr
+                   $ plot_lines_style . line_color .~ clr
+                   $ plot_lines_style . line_width .~ 2.5
+                   $ plot_lines_values .~ [lineVals]
+                   $ def
+          pts = [(statsNValue stat, statsIsoSpeed stat) | stat <- stats]
+          pointsPlot = plot_points_title .~ printf "SBR %.1f stops (Data)" sbr
+                     $ plot_points_style . point_color .~ clr
+                     $ plot_points_style . point_radius .~ 4.0
+                     $ plot_points_style . point_shape .~ PointShapeCircle
+                     $ plot_points_values .~ pts
+                     $ def
+      in [toPlot linePlot, toPlot pointsPlot]
+
+    allPlots = Prelude.concat $ Prelude.zipWith plotsForSbr [0..] sbrData
+
+    layout = layout_title .~ printf "Effective ISO Speed vs N-Value - %s (%s)" filmName developer
+      $ layout_plots .~ allPlots
+      $ layout_legend .~ Just (def & legend_orientation .~ LOCols 1)
+      $ layout_x_axis . laxis_title .~ "N-Value"
+      $ layout_y_axis . laxis_title .~ "Effective ISO Speed"
+      $ def
+
+    color i =
+      let numColors = Prelude.max 3 (Prelude.min 9 (length sbrData))
+          palette = brewerSet Set1 numColors
+      in opaque $ palette !! (i `mod` length palette)
+

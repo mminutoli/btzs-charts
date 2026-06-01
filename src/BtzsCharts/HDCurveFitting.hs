@@ -25,6 +25,7 @@ import Data.Vector.Storable as VS
 import Numeric.GSL.Fitting (fitModel)
 
 import qualified Data.Map as M
+import qualified Data.Text as T
 
 -- | Hurter-Driffield Curves.
 --
@@ -58,51 +59,35 @@ logisticModel _ _ = error "logisticModel: expected 4 parameters"
 logisticDeriv :: [Double] -> Double -> [[Double]]
 logisticDeriv [dMin, dMax, slope, infl] x =
   let e = exp (-slope * (x - infl))
-      denom = 1 + e
-      f_max = 1 / denom
-      f_min = 1 - f_max
-      df_ds = (dMax - dMin) * e * (x - infl) / (denom * denom)
-      df_di = (dMax - dMin) * (-slope) * e / (denom * denom)
-  in [[f_min, f_max, df_ds, df_di]]
+      d = 1 + e
+      d2 = d * d
+      num = dMax - dMin
+      d_dMin = 1 - 1/d
+      d_dMax = 1/d
+      d_slope = num * (x - infl) * e / d2
+      d_infl = -num * slope * e / d2
+  in [[d_dMin, d_dMax, d_slope, d_infl]]
 logisticDeriv _ _ = error "logisticDeriv: expected 4 parameters"
 
--- | Fit a HDCurve on the points read from the development experiments.
---
--- This function fits a 4-parameter logistic model using non-linear least squares.
---
--- The function expects that the relative order of the DensityReadings is
--- consistent between the two arguments and that the two vectors are of the same
--- length.
---
--- Arguments:
---
--- * @stepWedgeDensities@: The densities of the step-wedge used for the
---     experiment.
--- * @(devtime, materialDensities)@: The control variable and the associated
---     densities read by the reflection or transmission densitometer on
---     the tested material.
+-- | Fit a single characteristic curve using GSL non-linear least squares.
 fitHDCurve :: DensityReadings -> (Float, DensityReadings) -> HDCurve
-fitHDCurve stepWedgeDensities (devtime, materialDensities) =
-  HDCurve devtime (VS.fromList xs) (VS.fromList ys) bestParams
+fitHDCurve xs_raw (devTime, ys_raw) =
+  HDCurve devTime xs_raw ys_raw bestParams
   where
-    xs_raw = VS.toList stepWedgeDensities
-    ys_raw = VS.toList materialDensities
-    dat = zip xs_raw (Prelude.map (:[]) ys_raw)
-
-    -- Initial guesses for the 4PL model
-    dMin_guess = Prelude.minimum ys_raw
-    dMax_guess = Prelude.maximum ys_raw + 0.5
-    slope_guess = 2.0
-    infl_guess = (Prelude.maximum xs_raw + Prelude.minimum xs_raw) / 2.0
-    initialGuess = [dMin_guess, dMax_guess, slope_guess, infl_guess]
-
-    -- Perform the non-linear least squares fit
+    xs_list = VS.toList xs_raw
+    ys_list = VS.toList ys_raw
+    dat = Prelude.zip xs_list (Prelude.map (:[]) ys_list)
+    dMinGuess = VS.head ys_raw
+    dMaxGuess = VS.last ys_raw
+    slopeGuess = 1.0
+    inflGuess = 1.5
+    initialGuess = [dMinGuess, dMaxGuess, slopeGuess, inflGuess]
     -- fitModel epsAbs epsRel maxIter (model, deriv) data initialGuess
     (bestParams, _) = fitModel 1e-8 1e-8 1000 (logisticModel, logisticDeriv) dat initialGuess
 
     -- Generate a smooth curve, potentially extrapolating slightly
-    x0 = Prelude.minimum xs_raw
-    x1 = max 3.0 (Prelude.maximum xs_raw)
+    x0 = Prelude.minimum xs_list
+    x1 = max 3.0 (Prelude.maximum xs_list)
     xs = [x0, x0 + 0.01 .. x1]
     ys = Prelude.concatMap (logisticModel bestParams) xs
 
@@ -118,7 +103,19 @@ fitHDCurves stepWedge (FilmTest d) =
     Right () -> Prelude.map (fitHDCurve stepWedgeDensities) (M.toList (filmMeasurements d))
   where
     stepWedgeDensities = densities stepWedge
-fitHDCurves _ (PaperTest{}) = error "Paper analysis not yet implemented"
+fitHDCurves stepWedge (PaperTest d) =
+  case validateMeasurements stepWedge (PaperTest d) of
+    Left err -> error $ "Validation failed: " Prelude.++ err
+    Right () -> Prelude.map (\(gradeText, readings) ->
+      let gradeVal = case T.unpack gradeText of
+                       "00" -> -0.5
+                       "0"  -> 0.0
+                       s    -> case reads s of
+                                 [(val, "")] -> val
+                                 _ -> 2.0
+      in fitHDCurve stepWedgeDensities (gradeVal, readings)) (M.toList (paperMeasurements d))
+  where
+    stepWedgeDensities = densities stepWedge
 
 -- | The value of based plus fog as read from the sensitometer.
 --
