@@ -61,6 +61,8 @@ data FilmTestData = FilmTestData
   , filmTemperature :: !Float
   , filmRatedIso :: !Double
   , filmMeasurements :: !(M.Map Float DensityReadings)
+  , filmLux :: !(Maybe Double)
+  , filmExposureTime :: !(Maybe Double)
   }
   deriving stock (Generic, Show)
 
@@ -70,6 +72,8 @@ data PaperTestData = PaperTestData
   , paperDeveloper :: !T.Text
   , paperTemperature :: !Float
   , paperMeasurements :: !(M.Map T.Text DensityReadings)
+  , paperLux :: !(Maybe Double)
+  , paperExposureTime :: !(Maybe Double)
   }
   deriving stock (Generic, Show)
 
@@ -87,25 +91,40 @@ instance FromJSON MaterialTest where
       "Paper" -> PaperTest <$> parsePaper v
       _ -> fail $ "Unknown MaterialTest type: " ++ t
     where
-      parseFilm v = FilmTestData <$> v .: "name" <*> v .: "developer" <*> v .: "temperature" <*> v .: "ratedIso" <*> v .: "measurements"
-      parsePaper v = PaperTestData <$> v .: "name" <*> v .: "developer" <*> v .: "temperature" <*> v .: "measurements"
+      parseFilm v = FilmTestData
+        <$> v .: "name"
+        <*> v .: "developer"
+        <*> v .: "temperature"
+        <*> v .: "ratedIso"
+        <*> v .: "measurements"
+        <*> v .:? "lux"
+        <*> v .:? "exposureTime"
+      parsePaper v = PaperTestData
+        <$> v .: "name"
+        <*> v .: "developer"
+        <*> v .: "temperature"
+        <*> v .: "measurements"
+        <*> v .:? "lux"
+        <*> v .:? "exposureTime"
 
 instance ToJSON MaterialTest where
-  toJSON (FilmTest (FilmTestData n d t iso m)) =
-    object [ "type" .= ("Film" :: String)
-           , "name" .= n
-           , "developer" .= d
-           , "temperature" .= t
-           , "ratedIso" .= iso
-           , "measurements" .= m
-           ]
-  toJSON (PaperTest (PaperTestData n d t m)) =
-    object [ "type" .= ("Paper" :: String)
-           , "name" .= n
-           , "developer" .= d
-           , "temperature" .= t
-           , "measurements" .= m
-           ]
+  toJSON (FilmTest (FilmTestData n d t iso m lux expTime)) =
+    object $ [ "type" .= ("Film" :: String)
+             , "name" .= n
+             , "developer" .= d
+             , "temperature" .= t
+             , "ratedIso" .= iso
+             , "measurements" .= m
+             ] ++ maybe [] (\l -> ["lux" .= l]) lux
+               ++ maybe [] (\e -> ["exposureTime" .= e]) expTime
+  toJSON (PaperTest (PaperTestData n d t m lux expTime)) =
+    object $ [ "type" .= ("Paper" :: String)
+             , "name" .= n
+             , "developer" .= d
+             , "temperature" .= t
+             , "measurements" .= m
+             ] ++ maybe [] (\l -> ["lux" .= l]) lux
+               ++ maybe [] (\e -> ["exposureTime" .= e]) expTime
 
 -- | Validate that the material test data exactly matches the length of the step tablet used.
 validateMeasurements :: StepTablet -> MaterialTest -> Either String ()

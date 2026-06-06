@@ -57,6 +57,7 @@ library
                        BtzsCharts.CLI
                        BtzsCharts.Interpolation
                        BtzsCharts.FieldCharts
+                       BtzsCharts.PaperProfileExport
   build-depends:       aeson,
                        colour,
                        containers,
@@ -85,6 +86,21 @@ executable btzs-charts
                        -rtsopts
                        -with-rtsopts=-N
 
+executable btzs-exporter
+  import:              common-options
+  hs-source-dirs:      exporter
+  main-is:             Main.hs
+  build-depends:       btzs-charts,
+                       base,
+                       aeson,
+                       bytestring,
+                       optparse-applicative,
+                       containers,
+                       text
+  ghc-options:         -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
+
 test-suite btzs-charts-test
   import:              common-options
   type:                exitcode-stdio-1.0
@@ -107,6 +123,20 @@ test-suite btzs-charts-test
                        hedgehog,
                        tasty-hedgehog,
                        tasty-hunit
+  ghc-options:         -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
+
+executable btzs-uploader
+  import:              common-options
+  hs-source-dirs:      uploader
+  main-is:             Main.hs
+  build-depends:       base,
+                       aeson,
+                       bytestring,
+                       optparse-applicative,
+                       serialport >= 2.0.0.0,
+                       text
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N

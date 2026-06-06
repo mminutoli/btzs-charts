@@ -65,14 +65,18 @@ genMaterialTest = Gen.choice [genFilm, genPaper]
       iso <- Gen.double (Range.linearFrac 50 400)
       m <- Gen.map (Range.linear 5 10)
              ((,) <$> Gen.float (Range.linearFrac 0 30) <*> genDensityReadings)
-      return $ FilmTest (FilmTestData n d t iso m)
+      lux <- Gen.maybe (Gen.double (Range.linearFrac 0.1 1000.0))
+      expTime <- Gen.maybe (Gen.double (Range.linearFrac 0.001 60.0))
+      return $ FilmTest (FilmTestData n d t iso m lux expTime)
     genPaper = do
       n <- Gen.text (Range.constant 0 100) Gen.alphaNum
       d <- Gen.text (Range.constant 0 100) Gen.alphaNum
       t <- Gen.float (Range.linearFrac 0 30)
       m <- Gen.map (Range.linear 5 10)
              ((,) <$> Gen.text (Range.constant 1 2) Gen.alphaNum <*> genDensityReadings)
-      return $ PaperTest (PaperTestData n d t m)
+      lux <- Gen.maybe (Gen.double (Range.linearFrac 0.1 1000.0))
+      expTime <- Gen.maybe (Gen.double (Range.linearFrac 0.001 60.0))
+      return $ PaperTest (PaperTestData n d t m lux expTime)
 
 -- | Property to test ToJSON representation of MaterialTest.
 prop_MaterialTest_ToJSON_representation :: Property
@@ -84,19 +88,23 @@ prop_MaterialTest_ToJSON_representation = property $ do
 
     -- The expected representation of the MaterialTest
     expectedValue = case aMaterialTest of
-      FilmTest (FilmTestData n d t iso m) ->
-        object [ "type" .= ("Film" :: String)
-               , "name" .= n
-               , "developer" .= d
-               , "temperature" .= t
-               , "ratedIso" .= iso
-               , "measurements" .= m ]
-      PaperTest (PaperTestData n d t m) ->
-        object [ "type" .= ("Paper" :: String)
-               , "name" .= n
-               , "developer" .= d
-               , "temperature" .= t
-               , "measurements" .= m ]
+      FilmTest (FilmTestData n d t iso m lux expTime) ->
+        object $ [ "type" .= ("Film" :: String)
+                 , "name" .= n
+                 , "developer" .= d
+                 , "temperature" .= t
+                 , "ratedIso" .= iso
+                 , "measurements" .= m ]
+                 ++ maybe [] (\l -> ["lux" .= l]) lux
+                 ++ maybe [] (\e -> ["exposureTime" .= e]) expTime
+      PaperTest (PaperTestData n d t m lux expTime) ->
+        object $ [ "type" .= ("Paper" :: String)
+                 , "name" .= n
+                 , "developer" .= d
+                 , "temperature" .= t
+                 , "measurements" .= m ]
+                 ++ maybe [] (\l -> ["lux" .= l]) lux
+                 ++ maybe [] (\e -> ["exposureTime" .= e]) expTime
 
   -- The representation matches the expected one.
   jsonValue === expectedValue
