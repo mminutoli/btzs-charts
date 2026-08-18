@@ -2,3 +2,7 @@ resolver: lts-24.40
 nix:
   enable: true
   packages: [gsl, openblas, pkg-config, zlib]
+
+extra-deps:
+  - serialport-0.6.0
+

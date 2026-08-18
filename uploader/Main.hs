@@ -51,8 +51,8 @@ main = do
 
   putStrLn $ "Opening serial port " ++ portPath ++ "..."
   let settings = defaultSerialSettings
-        { recvTimeout = 10
-        , baudRate = B115200
+        { timeout = 10
+        , commSpeed = CS115200
         }
   bracket (openSerial portPath settings) closeSerial $ \serialPort -> do
     putStrLn "Waiting 2 seconds for ESP32 auto-reset to settle..."

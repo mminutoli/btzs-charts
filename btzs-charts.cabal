@@ -135,7 +135,7 @@ executable btzs-uploader
                        aeson,
                        bytestring,
                        optparse-applicative,
-                       serialport >= 2.0.0.0,
+                       serialport >= 0.6.0,
                        text
   ghc-options:         -threaded
                        -rtsopts
