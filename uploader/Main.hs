@@ -57,6 +57,8 @@ main = do
   bracket (openSerial portPath settings) closeSerial $ \serialPort -> do
     putStrLn "Waiting 2 seconds for ESP32 auto-reset to settle..."
     threadDelay 2000000
+    -- Clear any bootloader garbage from the serial input buffer
+    _ <- recv serialPort 1000
 
     putStrLn $ "Sending upload header: " ++ BSC.unpack headerBS
     _ <- send serialPort headerBS
