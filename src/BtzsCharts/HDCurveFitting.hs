@@ -110,20 +110,20 @@ fitHDCurves :: StepTablet -> MaterialTest -> [HDCurve]
 fitHDCurves stepWedge (FilmTest d) =
   case validateMeasurements stepWedge (FilmTest d) of
     Left err -> error $ "Validation failed: " Prelude.++ err
-    Right () -> Prelude.map (\(t, readings) ->
-      let (xs, ys) = prepareHDCurveData stepWedge readings
+    Right () -> Prelude.map (\(t, s) ->
+      let (xs, ys) = prepareHDCurveData stepWedge (seriesReadings s)
       in fitHDCurve xs (t, ys)) (M.toList (filmMeasurements d))
 fitHDCurves stepWedge (PaperTest d) =
   case validateMeasurements stepWedge (PaperTest d) of
     Left err -> error $ "Validation failed: " Prelude.++ err
-    Right () -> Prelude.map (\(gradeText, readings) ->
+    Right () -> Prelude.map (\(gradeText, s) ->
       let gradeVal = case T.unpack gradeText of
                        "00" -> -0.5
                        "0"  -> 0.0
-                       s    -> case reads s of
+                       str  -> case reads str of
                                  [(val, "")] -> val
                                  _ -> 2.0
-          (xs, ys) = prepareHDCurveData stepWedge readings
+          (xs, ys) = prepareHDCurveData stepWedge (seriesReadings s)
       in fitHDCurve xs (gradeVal, ys)) (M.toList (paperMeasurements d))
 
 -- | The value of based plus fog as read from the sensitometer.

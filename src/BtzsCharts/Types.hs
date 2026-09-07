@@ -17,6 +17,7 @@ Types capturing the information from the Paper and Film Testing procedures.
 module BtzsCharts.Types (
   Density,
   DensityReadings,
+  MeasurementSeries(..),
   MaterialTest(..),
   FilmTestData(..),
   PaperTestData(..),
@@ -26,6 +27,7 @@ module BtzsCharts.Types (
   ProcessConfM
   ) where
 
+import Control.Applicative ((<|>))
 import Data.Aeson
 import GHC.Generics ( Generic )
 import Control.Monad.Reader
@@ -39,6 +41,29 @@ type Density = Double
 
 -- | A series of desities as read from the experiment.
 type DensityReadings = VS.Vector Density
+
+-- | A single measurement curve/series (density readings + optional illuminance in lux).
+data MeasurementSeries = MeasurementSeries
+  { seriesReadings :: !DensityReadings
+  , seriesLux      :: !(Maybe Double)
+  }
+  deriving stock (Generic, Show, Eq)
+
+instance FromJSON MeasurementSeries where
+  parseJSON v = parseObject v <|> parseArray v
+    where
+      parseObject = withObject "MeasurementSeries" $ \o ->
+        MeasurementSeries
+          <$> o .: "densities"
+          <*> o .:? "lux"
+      parseArray val = MeasurementSeries
+        <$> parseJSON val
+        <*> pure Nothing
+
+instance ToJSON MeasurementSeries where
+  toJSON (MeasurementSeries ds Nothing) = toJSON ds
+  toJSON (MeasurementSeries ds (Just l)) =
+    object [ "densities" .= ds, "lux" .= l ]
 
 -- | Step Tablet
 data StepTablet =
@@ -60,28 +85,28 @@ data FilmTestData = FilmTestData
   , filmDeveloper :: !T.Text
   , filmTemperature :: !Float
   , filmRatedIso :: !Double
-  , filmMeasurements :: !(M.Map Float DensityReadings)
+  , filmMeasurements :: !(M.Map Float MeasurementSeries)
   , filmLux :: !(Maybe Double)
   , filmExposureTime :: !(Maybe Double)
   }
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Show, Eq)
 
 -- | Data specific to a paper test.
 data PaperTestData = PaperTestData
   { paperName :: !T.Text
   , paperDeveloper :: !T.Text
   , paperTemperature :: !Float
-  , paperMeasurements :: !(M.Map T.Text DensityReadings)
+  , paperMeasurements :: !(M.Map T.Text MeasurementSeries)
   , paperLux :: !(Maybe Double)
   , paperExposureTime :: !(Maybe Double)
   }
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Show, Eq)
 
 -- | Capture the settings and the results of testing materials.
 data MaterialTest
   = FilmTest FilmTestData
   | PaperTest PaperTestData
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Show, Eq)
 
 instance FromJSON MaterialTest where
   parseJSON = withObject "MaterialTest" $ \v -> do
@@ -131,8 +156,8 @@ validateMeasurements :: StepTablet -> MaterialTest -> Either String ()
 validateMeasurements tablet test =
   let expectedLen = VS.length (densities tablet)
       rs = case test of
-             FilmTest d -> M.elems (filmMeasurements d)
-             PaperTest d -> M.elems (paperMeasurements d)
+             FilmTest d -> map seriesReadings (M.elems (filmMeasurements d))
+             PaperTest d -> map seriesReadings (M.elems (paperMeasurements d))
   in if all (\r -> VS.length r == expectedLen) rs
      then Right ()
      else Left "Mismatch between StepTablet length and measurement lengths."

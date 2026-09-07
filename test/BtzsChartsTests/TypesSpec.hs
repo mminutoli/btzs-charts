@@ -58,13 +58,16 @@ prop_StepTablet_ToJSON_representation = property $ do
 genMaterialTest :: Gen MaterialTest
 genMaterialTest = Gen.choice [genFilm, genPaper]
   where
+    genSeries = MeasurementSeries
+      <$> genDensityReadings
+      <*> Gen.maybe (Gen.double (Range.linearFrac 0.1 1000.0))
     genFilm = do
       n <- Gen.text (Range.constant 0 100) Gen.alphaNum
       d <- Gen.text (Range.constant 0 100) Gen.alphaNum
       t <- Gen.float (Range.linearFrac 0 30)
       iso <- Gen.double (Range.linearFrac 50 400)
       m <- Gen.map (Range.linear 5 10)
-             ((,) <$> Gen.float (Range.linearFrac 0 30) <*> genDensityReadings)
+             ((,) <$> Gen.float (Range.linearFrac 0 30) <*> genSeries)
       lux <- Gen.maybe (Gen.double (Range.linearFrac 0.1 1000.0))
       expTime <- Gen.maybe (Gen.double (Range.linearFrac 0.001 60.0))
       return $ FilmTest (FilmTestData n d t iso m lux expTime)
@@ -73,7 +76,7 @@ genMaterialTest = Gen.choice [genFilm, genPaper]
       d <- Gen.text (Range.constant 0 100) Gen.alphaNum
       t <- Gen.float (Range.linearFrac 0 30)
       m <- Gen.map (Range.linear 5 10)
-             ((,) <$> Gen.text (Range.constant 1 2) Gen.alphaNum <*> genDensityReadings)
+             ((,) <$> Gen.text (Range.constant 1 2) Gen.alphaNum <*> genSeries)
       lux <- Gen.maybe (Gen.double (Range.linearFrac 0.1 1000.0))
       expTime <- Gen.maybe (Gen.double (Range.linearFrac 0.001 60.0))
       return $ PaperTest (PaperTestData n d t m lux expTime)
