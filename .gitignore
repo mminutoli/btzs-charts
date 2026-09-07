@@ -57,3 +57,4 @@ TAGS
 # Generated output files
 *.svg
 btzs-charts.json
+/*.json

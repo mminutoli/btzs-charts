@@ -58,7 +58,9 @@ library
                        BtzsCharts.Interpolation
                        BtzsCharts.FieldCharts
                        BtzsCharts.PaperProfileExport
+                       BtzsCharts.Densitometer
   build-depends:       aeson,
+                       bytestring,
                        colour,
                        containers,
                        Chart,
@@ -69,6 +71,7 @@ library
                        lens,
                        mtl,
                        palette,
+                       serialport >= 0.6.0,
                        vector,
                        text,
                        optparse-applicative
@@ -114,6 +117,7 @@ test-suite btzs-charts-test
                        BtzsChartsTests.CLISpec
                        BtzsChartsTests.InterpolationSpec
                        BtzsChartsTests.FieldChartsSpec
+                       BtzsChartsTests.DensitometerSpec
   build-depends:       btzs-charts,
                        aeson,
                        vector,
@@ -140,3 +144,21 @@ executable btzs-uploader
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N
+
+executable btzs-recorder
+  import:              common-options
+  hs-source-dirs:      recorder
+  main-is:             Main.hs
+  build-depends:       btzs-charts,
+                       base,
+                       aeson,
+                       bytestring,
+                       containers,
+                       optparse-applicative,
+                       serialport >= 0.6.0,
+                       text,
+                       vector
+  ghc-options:         -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
+

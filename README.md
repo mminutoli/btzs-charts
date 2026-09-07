@@ -50,10 +50,12 @@ stack test
 
 ## Data Format
 
-The input JSON files represent material tests. See the `data/` directory for examples. A typical file includes:
+The input and output JSON files represent step tablets and material tests. For complete JSON schema definitions and examples, see the [File Format Specifications](doc/file_formats.md).
 
-- **Step Tablet Definition:** Exposure values for each step.
-- **Material Test Data:** Density measurements for various development times.
+- **Step Tablet Definition:** Calibrated transmission optical density values for each step (e.g. Stouffer 21-step).
+- **Film Test Data:** Emulsion metadata and transmission density measurements for various development times.
+- **Paper Test Data:** Paper metadata and reflection density measurements across paper grades (with optional per-grade illuminance in lux).
+- **Exported Paper Profile:** Fitted logistic model parameters exported by `btzs-exporter` for upload to the ESP32 timer.
 
 ## Project Structure
 

@@ -21,6 +21,7 @@ import BtzsChartsTests.HDCurveFittingSpec(btzsChartsHDCurveFittingTests)
 import BtzsChartsTests.CLISpec(btzsChartsCLITests)
 import BtzsChartsTests.InterpolationSpec(btzsChartsInterpolationTests)
 import BtzsChartsTests.FieldChartsSpec(btzsChartsFieldChartsTests)
+import BtzsChartsTests.DensitometerSpec(btzsChartsDensitometerTests)
 
 tests :: TestTree
 tests = testGroup "Tests" [ btzsChartsTypesTests
@@ -30,6 +31,7 @@ tests = testGroup "Tests" [ btzsChartsTypesTests
                           , btzsChartsCLITests
                           , btzsChartsInterpolationTests
                           , btzsChartsFieldChartsTests
+                          , btzsChartsDensitometerTests
                           ]
 
 main :: IO ()
