@@ -99,6 +99,7 @@ executable btzs-exporter
                        bytestring,
                        optparse-applicative,
                        containers,
+                       serialport >= 0.6.0,
                        text
   ghc-options:         -threaded
                        -rtsopts
