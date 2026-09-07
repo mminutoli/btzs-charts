@@ -1,5 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
 module BtzsChartsTests.Generators (
     genProcessConfig,
+    genZoneSystemConfig,
+    genPaperProcessConfig,
+    genFilmProcessConfig,
     genHDCurve
   ) where
 
@@ -11,18 +15,50 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import qualified Data.Vector.Storable as VS
 
+-- | Generator for ZoneSystemConfig.
+genZoneSystemConfig :: Gen ZoneSystemConfig
+genZoneSystemConfig = do
+  nz <- Gen.element [10, 11]
+  ori <- Gen.element [BlackIsZone0, WhiteIsZone0]
+  let (hl, sh) = case ori of
+        BlackIsZone0 -> if nz == 10 then (9.0, 2.0) else (8.0, 2.0)
+        WhiteIsZone0 -> if nz == 10 then (0.0, 7.0) else (1.0, 7.0)
+  return $ ZoneSystemConfig nz ori hl sh mempty
+
+-- | Generator for PaperProcessConfig.
+genPaperProcessConfig :: Gen PaperProcessConfig
+genPaperProcessConfig = do
+  grade <- Gen.element ["00", "0", "1", "2", "3", "4", "5"]
+  mHl <- Gen.maybe (Gen.double (Range.linearFrac 0.02 0.10))
+  mSh <- Gen.maybe (Gen.double (Range.linearFrac 0.70 0.95))
+  return $ PaperProcessConfig grade mHl mSh
+
+-- | Generator for FilmProcessConfig.
+genFilmProcessConfig :: Gen FilmProcessConfig
+genFilmProcessConfig = do
+  spd <- Gen.double (Range.linearFrac 0.05 0.2)
+  sag <- Gen.double (Range.linearFrac 0.4 1.2)
+  spf <- Gen.double (Range.linearFrac 0.5 1.5)
+  fcf <- Gen.double (Range.linearFrac 0.5 1.5)
+  sbr <- Gen.maybe (Gen.double (Range.linearFrac 5.0 9.0))
+  return $ FilmProcessConfig spd sag spf fcf sbr
+
 -- | Generator for ProcessConfiguration.
 genProcessConfig :: Gen ProcessConfiguration
 genProcessConfig = Gen.filter (\c -> (standardAvgGradient c / speedPointFactor c) * flareCompensationFactor c < 1.7) rawGen
   where
-    rawGen = ProcessConfiguration
-      <$> Gen.double (Range.linearFrac 0.4 1.2)
-      <*> Gen.double (Range.linearFrac 0.5 1.5)
-      <*> Gen.double (Range.linearFrac 0.5 1.5)
-      <*> Gen.double (Range.linearFrac 5.0 9.0)
-      <*> Gen.double (Range.linearFrac 0.05 0.2)
-      <*> Gen.double (Range.linearFrac 0.02 0.06)
-      <*> Gen.double (Range.linearFrac 0.85 0.95)
+    rawGen = do
+      sag <- Gen.double (Range.linearFrac 0.4 1.2)
+      spf <- Gen.double (Range.linearFrac 0.5 1.5)
+      fcf <- Gen.double (Range.linearFrac 0.5 1.5)
+      zr  <- Gen.double (Range.linearFrac 5.0 9.0)
+      spd <- Gen.double (Range.linearFrac 0.05 0.2)
+      pspd <- Gen.double (Range.linearFrac 0.02 0.06)
+      pidm <- Gen.double (Range.linearFrac 0.85 0.95)
+      let zs = ZoneSystemConfig 10 BlackIsZone0 9.0 2.0 mempty
+          pap = PaperProcessConfig "2" Nothing (Just pidm)
+          flm = FilmProcessConfig spd sag spf fcf (Just zr)
+      return $ ProcessConfiguration "2.0" "Generated Process" zs pap flm (Just pspd)
 
 
 -- | Generator for HDCurve using a logistic model.

@@ -1,0 +1,22 @@
+{
+  "version": "2.0",
+  "name": "Standard 10-Zone BTZS Process",
+  "zoneSystem": {
+    "numZones": 10,
+    "orientation": "blackIsZone0",
+    "partitionMethod": "uniformDensity",
+    "highlightZone": 9,
+    "shadowZone": 2
+  },
+  "paper": {
+    "targetGrade": "2",
+    "highlightDensityFraction": 0.04,
+    "shadowDensityFraction": 0.90
+  },
+  "film": {
+    "speedPointDensity": 0.10,
+    "standardAvgGradient": 0.58,
+    "speedPointFactor": 1.0,
+    "flareCompensationFactor": 1.03
+  }
+}

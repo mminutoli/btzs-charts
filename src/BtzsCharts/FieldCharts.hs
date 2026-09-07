@@ -64,7 +64,7 @@ calculateCurveStats filmCurves ratedIso ler mr = do
   tRef <- timeForGradient ler filmCurves gRefTarget
   let refCurve = estimateCurve filmCurves tRef
   eRef <- filmSpeedPointExposure refCurve
-  normalSbr <- asks zoneRange
+  normalSbr <- asks effectiveNormalSbr
 
   -- 2. Compute stats for each measured curve in the family
   let computeStats curve = do

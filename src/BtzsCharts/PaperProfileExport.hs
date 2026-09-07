@@ -24,8 +24,8 @@ import BtzsCharts.HDCurveFitting
 import BtzsCharts.Types
 
 import Data.Aeson
-import Data.Aeson.Types
 import GHC.Generics (Generic)
+import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Vector.Storable as VS
 
@@ -72,7 +72,7 @@ formatGrade v
   | v == -0.5 = "00"
   | v == 0.0  = "0"
   | otherwise =
-      let r = round v
+      let r = round v :: Integer
       in if abs (v - fromIntegral r) < 1e-5
          then T.pack (show r)
          else T.pack (show v)
@@ -80,7 +80,7 @@ formatGrade v
 -- | Fit paper curves and build the paper profile JSON payload.
 buildTargetProfile :: StepTablet -> MaterialTest -> PaperProfile
 buildTargetProfile stepTablet mt = case mt of
-  PaperTest (PaperTestData n dev temp _ lux exp) ->
+  PaperTest (PaperTestData n dev temp meas globalLux expTime) ->
     let curves = fitHDCurves stepTablet mt
         stepWedgeDensities = densities stepTablet
         maxDensity = if VS.null stepWedgeDensities
@@ -89,12 +89,18 @@ buildTargetProfile stepTablet mt = case mt of
         buildGrade hd =
           case modelParameters hd of
             [dMinVal, dMaxVal, slopeVal, inflVal] ->
-              let x0_val = case (lux, exp) of
+              let gradeLabel = formatGrade (developmentTime hd)
+                  gradeLux = case M.lookup gradeLabel meas of
+                    Just s  -> case seriesLux s of
+                      Just l  -> Just l
+                      Nothing -> globalLux
+                    Nothing -> globalLux
+                  x0_val = case (gradeLux, expTime) of
                     (Just l, Just e) ->
                       inflVal + logBase 10 (l * e) - maxDensity
                     _ -> inflVal
               in PaperGradeProfile
-                   { label = formatGrade (developmentTime hd)
+                   { label = gradeLabel
                    , dMin = dMinVal
                    , dMax = dMaxVal
                    , x0 = x0_val

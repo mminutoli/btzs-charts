@@ -14,6 +14,7 @@ module BtzsChartsTests.PaperAnalysisSpec (btzsChartsPaperAnalysisTests) where
 
 import BtzsCharts.HDCurveFitting
 import BtzsCharts.PaperAnalysis
+import BtzsCharts.Types
 import BtzsChartsTests.Generators
 
 import Control.Monad.Reader
@@ -28,6 +29,7 @@ btzsChartsPaperAnalysisTests = testGroup "Tests for BtzsCharts.PaperAnalysis"
   , testProperty "Dynamic Range is within physical bounds" prop_DynamicRange_bounds
   , testProperty "Inverse model verification for Speed Point" prop_inverse_verification_speedpoint
   , testProperty "Inverse model verification for IDmax" prop_inverse_verification_idmax
+  , testProperty "LER matches analytical K_zone / slope" prop_LER_matches_analytical_kzone
   ]
 
 -- | Property: Log Exposure Range must be strictly positive for a valid paper curve.
@@ -75,4 +77,19 @@ prop_inverse_verification_idmax = property $ do
   let (targetD, e) = runReader (paperIdMax curve) conf
   case logisticModel (modelParameters curve) e of
     [calcD] -> diff calcD (\a b -> abs (a - b) < 1e-4) targetD
+    _ -> failure
+
+-- | Property: LER calculated as x(y_sh) - x(y_hl) matches the analytical K_zone / slope formula.
+prop_LER_matches_analytical_kzone :: Property
+prop_LER_matches_analytical_kzone = property $ do
+  conf <- forAll genProcessConfig
+  curve <- forAll genHDCurve
+  case modelParameters curve of
+    [dMin, dMax, slope, _] -> do
+      let ler = runReader (logExposureRange curve) conf
+          yHl = resolveHlFraction conf dMin dMax
+          ySh = resolveShFraction conf
+          kZone = zoneContrastConstant yHl ySh
+          expectedLer = kZone / slope
+      diff ler (\a b -> abs (a - b) < 1e-4) expectedLer
     _ -> failure

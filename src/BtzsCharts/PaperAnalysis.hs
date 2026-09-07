@@ -22,36 +22,41 @@ import Control.Monad.Reader
 import BtzsCharts.Types
 import BtzsCharts.HDCurveFitting
 
--- | Calculate the Paper Speed Point.
--- Returns the target Density (Base+Fog + paperSpeedPointDensity) and the required Log Exposure.
+-- | Calculate the Paper Speed Point (Target Highlight).
+-- Target highlight density = Dmin + y_hl * (Dmax - Dmin)
+-- Returns the target Density and the required Log Exposure.
 paperSpeedPoint :: HDCurve -> ProcessConfM (Density, Double)
 paperSpeedPoint hd = do
-  density <- asks paperSpeedPointDensity
-  let bpf = basePlusFog hd
-      speedDensity = bpf + density
-      exposureAtSpeedPoint = exposureForDensity hd speedDensity
-  return (speedDensity, exposureAtSpeedPoint)
+  cfg <- ask
+  case modelParameters hd of
+    [dMin, dMax, _, _] -> do
+      let yHl = resolveHlFraction cfg dMin dMax
+          targetD = dMin + yHl * (dMax - dMin)
+          exposureAtHl = exposureForDensity hd targetD
+      return (targetD, exposureAtHl)
+    _ -> error "paperSpeedPoint: expected 4 parameters"
 
--- | Calculate the Paper IDmax.
--- Returns the target Density (Base+Fog + (Dmax - Base+Fog) * paperIdMaxPercentage) and the required Log Exposure.
+-- | Calculate the Paper IDmax (Target Shadow).
+-- Target shadow density = Dmin + y_sh * (Dmax - Dmin)
+-- Returns the target Density and the required Log Exposure.
 paperIdMax :: HDCurve -> ProcessConfM (Density, Double)
 paperIdMax hd = do
-  maxDensityPercentage <- asks paperIdMaxPercentage
+  cfg <- ask
   case modelParameters hd of
-    [_, dmax, _, _] ->
-      let bpf = basePlusFog hd
-          idMax = bpf + (dmax - bpf) * maxDensityPercentage
-          exposureAtIdMax = exposureForDensity hd idMax
-      in return (idMax, exposureAtIdMax)
+    [dMin, dMax, _, _] -> do
+      let ySh = resolveShFraction cfg
+          targetD = dMin + ySh * (dMax - dMin)
+          exposureAtSh = exposureForDensity hd targetD
+      return (targetD, exposureAtSh)
     _ -> error "paperIdMax: expected 4 parameters"
 
 -- | Calculate the Log Exposure Range (LER) or Exposure Scale (ES).
--- LER = Log Exposure at IDmax - Log Exposure at Speed Point.
+-- LER = Log Exposure at IDmax - Log Exposure at Speed Point = x(y_sh) - x(y_hl).
 logExposureRange :: HDCurve -> ProcessConfM Double
 logExposureRange hd = do
-  (_, exposureAtSpeedPoint) <- paperSpeedPoint hd
-  (_, exposureAtIdMax) <- paperIdMax hd
-  return (exposureAtIdMax - exposureAtSpeedPoint)
+  (_, exposureAtHl) <- paperSpeedPoint hd
+  (_, exposureAtSh) <- paperIdMax hd
+  return (exposureAtSh - exposureAtHl)
 
 -- | Calculate the ISO Range.
 -- ISO Range = Round(LER * 100 / 10) * 10
@@ -65,6 +70,6 @@ isoRange hd = do
 -- Dynamic Range = Density at IDmax - Density at Base+Fog.
 paperDynamicRange :: HDCurve -> ProcessConfM Density
 paperDynamicRange hd = do
-  (densityAtSpeedPoint, _) <- paperSpeedPoint hd
-  (densityAtIdMax, _) <- paperIdMax hd
-  return (densityAtIdMax - densityAtSpeedPoint)
+  (densityAtHl, _) <- paperSpeedPoint hd
+  (densityAtSh, _) <- paperIdMax hd
+  return (densityAtSh - densityAtHl)
